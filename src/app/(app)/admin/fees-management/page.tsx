@@ -157,7 +157,7 @@ export default function FeesManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-green-600">Collection Reports</CardTitle>
@@ -183,6 +183,20 @@ export default function FeesManagementPage() {
                         <Link href="/admin/fee-reports/headwise-dues-report" className="text-primary hover:underline">Headwise Dues</Link>
                         <Link href="/admin/fee-reports/installment-wise-dues-report" className="text-primary hover:underline">Installment Wise Dues</Link>
                         <Link href="/admin/fee-reports/consolidated-dues-report" className="text-primary hover:underline">Consolidate Dues</Link>
+                    </CardContent>
+                </Card>
+                
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-blue-600">Student Wise Reports</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col space-y-2 text-sm">
+                        <Link href="#" className="text-primary hover:underline">Student Wise Fees</Link>
+                        <Link href="#" className="text-primary hover:underline">Group Wise Fees</Link>
+                        <Link href="#" className="text-primary hover:underline">Student Fee Type Wise</Link>
+                        <Link href="#" className="text-primary hover:underline">Class Wise Fees</Link>
+                        <Link href="#" className="text-primary hover:underline">Student Payment</Link>
+                         <Link href="/admin/fee-reports/consolidated-dues-report" className="text-primary hover:underline">Consolidated Fee Report</Link>
                     </CardContent>
                 </Card>
               </div>
