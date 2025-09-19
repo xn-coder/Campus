@@ -204,6 +204,35 @@ export default function ManageFeeGroupsPage() {
     const feeItem = allFeeTypesAndInstallments.find(ft => ft.id === id);
     return (feeItem as FeeType)?.display_name || feeItem?.name || 'Unknown';
   }
+  
+  const aggregatedAssignedGroups = useMemo(() => {
+    const studentGroupMap = new Map<string, { student: any; fee_type_group: any; statuses: Set<string> }>();
+
+    assignedGroups.forEach(fee => {
+      const key = `${fee.student_id}-${fee.fee_type_group_id}`;
+      if (!studentGroupMap.has(key)) {
+        studentGroupMap.set(key, {
+          student: fee.student,
+          fee_type_group: fee.fee_type_group,
+          statuses: new Set(),
+        });
+      }
+      studentGroupMap.get(key)?.statuses.add(fee.status);
+    });
+    
+    return Array.from(studentGroupMap.values()).map(value => {
+        let overallStatus: string;
+        if (value.statuses.has('Pending') || value.statuses.has('Partially Paid') || value.statuses.has('Overdue')) {
+            overallStatus = 'Pending';
+        } else if (value.statuses.size === 1 && value.statuses.has('Paid')) {
+            overallStatus = 'Paid';
+        } else {
+            overallStatus = 'Mixed'; // Should not happen with current logic, but as a fallback
+        }
+        return { ...value, overallStatus };
+    });
+  }, [assignedGroups]);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -223,7 +252,7 @@ export default function ManageFeeGroupsPage() {
         <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="groups">Fee Groups</TabsTrigger>
             <TabsTrigger value="assign">Assign Group</TabsTrigger>
-            <TabsTrigger value="assigned-log">Assignment Log ({assignedGroups.length})</TabsTrigger>
+            <TabsTrigger value="assigned-log">Assignment Log ({aggregatedAssignedGroups.length})</TabsTrigger>
         </TabsList>
         <TabsContent value="groups">
             <Card>
@@ -319,8 +348,29 @@ export default function ManageFeeGroupsPage() {
             <Card>
                  <CardHeader><CardTitle className="flex items-center">Assigned Groups Log</CardTitle></CardHeader>
                 <CardContent>
-                     {isLoading ? (<div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin"/></div>) : assignedGroups.length === 0 ? (<p className="text-muted-foreground text-center py-4">No fee groups have been assigned yet.</p>) : (
-                        <Table><TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Fee Group</TableHead><TableHead>Status</TableHead></TableRow></TableHeader><TableBody>{assignedGroups.map(fee => (<TableRow key={fee.id}><TableCell className="font-medium">{fee.student.name}</TableCell><TableCell>{fee.fee_type_group?.name || 'N/A'}</TableCell><TableCell><Badge variant={fee.status === 'Paid' ? 'default' : fee.status === 'Partially Paid' ? 'secondary' : 'destructive'}>{fee.status}</Badge></TableCell></TableRow>))}</TableBody></Table>
+                     {isLoading ? (<div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin"/></div>) : aggregatedAssignedGroups.length === 0 ? (<p className="text-muted-foreground text-center py-4">No fee groups have been assigned yet.</p>) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Student</TableHead>
+                                    <TableHead>Fee Group</TableHead>
+                                    <TableHead>Overall Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {aggregatedAssignedGroups.map(item => (
+                                    <TableRow key={`${item.student.id}-${item.fee_type_group.id}`}>
+                                        <TableCell className="font-medium">{item.student.name}</TableCell>
+                                        <TableCell>{item.fee_type_group?.name || 'N/A'}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={item.overallStatus === 'Paid' ? 'default' : 'destructive'}>
+                                                {item.overallStatus}
+                                            </Badge>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                      )}
                 </CardContent>
             </Card>
@@ -379,5 +429,3 @@ export default function ManageFeeGroupsPage() {
     </div>
   );
 }
-
-    
