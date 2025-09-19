@@ -31,13 +31,15 @@ async function fetchUserSchoolId(userId: string): Promise<string | null> {
   return user.school_id;
 }
 
+type CombinedFeeItem = (FeeType | Installment) & { item_type: 'fee_type' | 'installment' | 'special_fee_type' };
+
 export default function ManageFeeGroupsPage() {
   const { toast } = useToast();
   const [feeGroups, setFeeGroups] = useState<FeeTypeGroup[]>([]);
   const [assignedGroups, setAssignedGroups] = useState<(StudentFeePayment & { student: {name: string, email: string}, fee_type_group: {name: string}})[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [allClasses, setAllClasses] = useState<ClassData[]>([]);
-  const [allFeeTypesAndInstallments, setAllFeeTypesAndInstallments] = useState<(FeeType | Installment)[]>([]);
+  const [allFeeTypesAndInstallments, setAllFeeTypesAndInstallments] = useState<CombinedFeeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
@@ -71,9 +73,17 @@ export default function ManageFeeGroupsPage() {
         setAllClasses(result.classes || []);
         
         // Combine fee types and installments into one list
-        const regularFeeTypes = (result.feeTypes || []).map(ft => ({ ...ft, type: 'fee' as const }));
-        const installmentFees = (result.installments || []).map(i => ({ ...i, name: i.title, display_name: i.title, type: 'installment' as const }));
-        setAllFeeTypesAndInstallments([...regularFeeTypes, ...installmentFees]);
+        const regularFeeTypes = (result.feeTypes || [])
+          .filter(ft => ft.installment_type === 'installments')
+          .map(ft => ({ ...ft, item_type: 'fee_type' as const }));
+
+        const specialFeeTypes = (result.feeTypes || [])
+          .filter(ft => ft.installment_type === 'extra_charge')
+          .map(ft => ({ ...ft, item_type: 'special_fee_type' as const }));
+
+        const installmentFees = (result.installments || []).map(i => ({ ...i, name: i.title, display_name: i.title, item_type: 'installment' as const }));
+        
+        setAllFeeTypesAndInstallments([...regularFeeTypes, ...specialFeeTypes, ...installmentFees]);
 
     } else {
         toast({ title: "Error fetching page data", description: result.message, variant: "destructive" });
@@ -284,7 +294,7 @@ export default function ManageFeeGroupsPage() {
                                         <Input
                                             id={`amount-${ft.id}`}
                                             type="number"
-                                            placeholder={`Default: ${ft.amount || 0}`}
+                                            placeholder={`Default: ${(ft as FeeType | Installment).amount || 0}`}
                                             value={assignAmounts[ft.id] || ''}
                                             onChange={e => setAssignAmounts(prev => ({...prev, [ft.id]: e.target.value === '' ? '' : parseFloat(e.target.value)}))}
                                             step="0.01"
@@ -341,7 +351,13 @@ export default function ManageFeeGroupsPage() {
                                     setSelectedFeeTypeIdsForGroup(prev => checked ? [...prev, ft.id] : prev.filter(id => id !== ft.id))
                                 }}
                             />
-                            <Label htmlFor={`ft-${ft.id}`} className="font-normal">{(ft as FeeType).display_name || ft.name} <span className="text-xs text-muted-foreground">({(ft as any).type === 'installment' ? 'Installment' : 'Fee Type'})</span></Label>
+                            <Label htmlFor={`ft-${ft.id}`} className="font-normal">
+                                {(ft as FeeType).display_name || ft.name} 
+                                <span className="text-xs text-muted-foreground"> ({
+                                    ft.item_type === 'fee_type' ? 'Regular Fee' :
+                                    ft.item_type === 'special_fee_type' ? 'Special Fee' : 'Installment'
+                                })</span>
+                            </Label>
                         </div>
                     ))}
                     {allFeeTypesAndInstallments.length === 0 && (
@@ -363,3 +379,5 @@ export default function ManageFeeGroupsPage() {
     </div>
   );
 }
+
+    
