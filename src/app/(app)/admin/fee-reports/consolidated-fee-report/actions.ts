@@ -11,7 +11,13 @@ interface FeeSummary {
     total_due: number;
 }
 
-export async function getConsolidatedFeeReportPageDataAction(adminUserId: string) {
+export async function getConsolidatedFeeReportPageDataAction(adminUserId: string): Promise<{
+    ok: boolean;
+    schoolId?: string | null;
+    classes?: ClassData[];
+    students?: Student[];
+    message?: string;
+}> {
     if (!adminUserId) {
         return { ok: false, message: 'Admin user not found.' };
     }
@@ -39,6 +45,7 @@ export async function getConsolidatedFeeReportPageDataAction(adminUserId: string
         
         return {
             ok: true,
+            schoolId: schoolId,
             classes: classes || [],
             students: students || []
         };

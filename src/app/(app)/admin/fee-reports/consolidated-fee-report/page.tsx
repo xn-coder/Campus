@@ -29,6 +29,7 @@ export default function ConsolidatedFeeReportPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingInitialData, setIsFetchingInitialData] = useState(true);
     
+    const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
     const [selectedClassId, setSelectedClassId] = useState('');
     const [selectedStudentId, setSelectedStudentId] = useState('');
     
@@ -58,6 +59,7 @@ export default function ConsolidatedFeeReportPage() {
         if (result.ok) {
             setClasses(result.classes || []);
             setStudents(result.students || []);
+            setCurrentSchoolId(result.schoolId || null);
         } else {
             toast({ title: "Error", description: result.message, variant: "destructive" });
         }
@@ -73,14 +75,13 @@ export default function ConsolidatedFeeReportPage() {
             toast({ title: "Please select a student", variant: "destructive" });
             return;
         }
-        setIsLoading(true);
-        const schoolId = students.find(s => s.id === selectedStudentId)?.school_id;
-        if (!schoolId) {
-             toast({ title: "Error", description: "Could not determine school for the selected student.", variant: "destructive" });
-             setIsLoading(false);
+        if (!currentSchoolId) {
+             toast({ title: "Error", description: "Could not determine school context.", variant: "destructive" });
              return;
         }
-        const result = await getStudentConsolidatedReportAction(selectedStudentId, schoolId);
+        setIsLoading(true);
+        
+        const result = await getStudentConsolidatedReportAction(selectedStudentId, currentSchoolId);
         if (result.ok) {
             setReportData(result.summary || []);
         } else {
