@@ -48,14 +48,13 @@ export default function ConsolidatedFeeReportPage() {
     const loadInitialData = useCallback(async () => {
         setIsFetchingInitialData(true);
         const adminUserId = localStorage.getItem('currentUserId');
-        const schoolId = localStorage.getItem('currentSchoolId'); // Assumes schoolId is available
-        if (!adminUserId || !schoolId) {
+        if (!adminUserId) {
             toast({ title: "Error", description: "Context not found. Please log in again.", variant: "destructive" });
             setIsFetchingInitialData(false);
             return;
         }
 
-        const result = await getConsolidatedFeeReportPageDataAction(schoolId);
+        const result = await getConsolidatedFeeReportPageDataAction(adminUserId);
         if (result.ok) {
             setClasses(result.classes || []);
             setStudents(result.students || []);
@@ -75,8 +74,13 @@ export default function ConsolidatedFeeReportPage() {
             return;
         }
         setIsLoading(true);
-        const schoolId = localStorage.getItem('currentSchoolId');
-        const result = await getStudentConsolidatedReportAction(selectedStudentId, schoolId!);
+        const schoolId = students.find(s => s.id === selectedStudentId)?.school_id;
+        if (!schoolId) {
+             toast({ title: "Error", description: "Could not determine school for the selected student.", variant: "destructive" });
+             setIsLoading(false);
+             return;
+        }
+        const result = await getStudentConsolidatedReportAction(selectedStudentId, schoolId);
         if (result.ok) {
             setReportData(result.summary || []);
         } else {
@@ -118,7 +122,7 @@ export default function ConsolidatedFeeReportPage() {
             {reportData.length > 0 && (
                 <>
                 <Card>
-                    <CardHeader><CardTitle>Overall Summary</CardTitle></CardHeader>
+                    <CardHeader><CardTitle>Overall Summary for {students.find(s=>s.id === selectedStudentId)?.name}</CardTitle></CardHeader>
                     <CardContent className="grid md:grid-cols-3 gap-4">
                         <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                             <p className="text-sm text-blue-600 dark:text-blue-300">Total Payable</p>

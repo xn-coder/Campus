@@ -11,10 +11,17 @@ interface FeeSummary {
     total_due: number;
 }
 
-export async function getConsolidatedFeeReportPageDataAction(schoolId: string) {
-    if (!schoolId) return { ok: false, message: 'School ID not found.' };
+export async function getConsolidatedFeeReportPageDataAction(adminUserId: string) {
+    if (!adminUserId) {
+        return { ok: false, message: 'Admin user not found.' };
+    }
     const supabase = createSupabaseServerClient();
+
     try {
+        const { data: user, error: userError } = await supabase.from('users').select('school_id').eq('id', adminUserId).single();
+        if (userError || !user?.school_id) throw new Error(userError?.message || "Admin not associated with a school.");
+        const schoolId = user.school_id;
+
         const { data: classes, error: classError } = await supabase
             .from('classes')
             .select('id, name, division')
