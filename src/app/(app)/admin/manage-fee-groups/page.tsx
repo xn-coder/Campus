@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import type { FeeTypeGroup, FeeType, Student, StudentFeePayment, ClassData } from '@/types';
+import type { FeeTypeGroup, FeeType, Student, StudentFeePayment, ClassData, Installment } from '@/types';
 import { useState, useEffect, type FormEvent, useCallback, useMemo } from 'react';
 import { PlusCircle, Edit2, Trash2, Save, Group, Loader2, MoreHorizontal, ArrowLeft, Filter, Receipt } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +37,7 @@ export default function ManageFeeGroupsPage() {
   const [assignedGroups, setAssignedGroups] = useState<(StudentFeePayment & { student: {name: string, email: string}, fee_type_group: {name: string}})[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [allClasses, setAllClasses] = useState<ClassData[]>([]);
-  const [allFeeTypes, setAllFeeTypes] = useState<FeeType[]>([]);
+  const [allFeeTypesAndInstallments, setAllFeeTypesAndInstallments] = useState<(FeeType | Installment)[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
@@ -69,7 +69,12 @@ export default function ManageFeeGroupsPage() {
         setAssignedGroups(result.assignedGroups || []);
         setAllStudents(result.students || []);
         setAllClasses(result.classes || []);
-        setAllFeeTypes(result.feeTypes || []);
+        
+        // Combine fee types and installments into one list
+        const regularFeeTypes = (result.feeTypes || []).map(ft => ({ ...ft, type: 'fee' as const }));
+        const installmentFees = (result.installments || []).map(i => ({ ...i, name: i.title, display_name: i.title, type: 'installment' as const }));
+        setAllFeeTypesAndInstallments([...regularFeeTypes, ...installmentFees]);
+
     } else {
         toast({ title: "Error fetching page data", description: result.message, variant: "destructive" });
     }
@@ -123,7 +128,7 @@ export default function ManageFeeGroupsPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!groupName.trim() || selectedFeeTypeIdsForGroup.length === 0 || !currentSchoolId) {
-      toast({ title: "Error", description: "Group Name and at least one Fee Type are required.", variant: "destructive" });
+      toast({ title: "Error", description: "Group Name and at least one Fee Type or Installment are required.", variant: "destructive" });
       return;
     }
     setIsSubmitting(true);
@@ -185,6 +190,11 @@ export default function ManageFeeGroupsPage() {
     setIsSubmitting(false);
   }
 
+  const getFeeTypeName = (id: string) => {
+    const feeItem = allFeeTypesAndInstallments.find(ft => ft.id === id);
+    return (feeItem as FeeType)?.display_name || feeItem?.name || 'Unknown';
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -213,7 +223,7 @@ export default function ManageFeeGroupsPage() {
                 <CardContent>
                   {isLoading ? <div className="text-center py-4"><Loader2 className="h-6 w-6 animate-spin"/></div>
                   : feeGroups.length === 0 ? <p className="text-muted-foreground text-center py-4">No fee groups have been created yet.</p>
-                  : <Table><TableHeader><TableRow><TableHead>Group Name</TableHead><TableHead>Fee Types Included</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{feeGroups.map((group) => (<TableRow key={group.id}><TableCell className="font-medium">{group.name}</TableCell><TableCell className="text-xs text-muted-foreground">{group.fee_type_ids.map(id => allFeeTypes.find(ft => ft.id === id)?.name || 'Unknown').join(', ')}</TableCell><TableCell className="text-right"><AlertDialog><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSubmitting}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => handleOpenDialog(group)}><Edit2 className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></AlertDialogTrigger></DropdownMenuContent></DropdownMenu><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone and will permanently delete the fee group "{group.name}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteGroup(group.id)} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}</TableBody></Table>
+                  : <Table><TableHeader><TableRow><TableHead>Group Name</TableHead><TableHead>Items Included</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader><TableBody>{feeGroups.map((group) => (<TableRow key={group.id}><TableCell className="font-medium">{group.name}</TableCell><TableCell className="text-xs text-muted-foreground">{group.fee_type_ids.map(getFeeTypeName).join(', ')}</TableCell><TableCell className="text-right"><AlertDialog><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" disabled={isSubmitting}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => handleOpenDialog(group)}><Edit2 className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><AlertDialogTrigger asChild><DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></AlertDialogTrigger></DropdownMenuContent></DropdownMenu><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Are you sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone and will permanently delete the fee group "{group.name}".</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeleteGroup(group.id)} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>))}</TableBody></Table>
                   }
                 </CardContent>
               </Card>
@@ -265,12 +275,12 @@ export default function ManageFeeGroupsPage() {
                         
                         {assignGroupId && (
                             <div className="space-y-3 pt-2 border-t">
-                                <h4 className="font-medium text-sm">Enter Amounts for Fee Types</h4>
-                                {allFeeTypes
+                                <h4 className="font-medium text-sm">Enter Amounts for Fee Items</h4>
+                                {allFeeTypesAndInstallments
                                     .filter(ft => feeGroups.find(fg => fg.id === assignGroupId)?.fee_type_ids.includes(ft.id))
                                     .map(ft => (
                                     <div key={ft.id} className="grid grid-cols-3 items-center gap-2">
-                                        <Label htmlFor={`amount-${ft.id}`} className="col-span-2">{ft.display_name}</Label>
+                                        <Label htmlFor={`amount-${ft.id}`} className="col-span-2">{(ft as FeeType).display_name || ft.name}</Label>
                                         <Input
                                             id={`amount-${ft.id}`}
                                             type="number"
@@ -319,10 +329,10 @@ export default function ManageFeeGroupsPage() {
                 <Input id="groupName" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="e.g., Annual Fees, New Admission Pack" required disabled={isSubmitting} />
               </div>
               <div>
-                <Label>Select Fee Types to Include</Label>
+                <Label>Select Fee Types & Installments to Include</Label>
                 <Card className="max-h-60 overflow-y-auto p-2 border">
                   <div className="space-y-2">
-                    {allFeeTypes.map(ft => (
+                    {allFeeTypesAndInstallments.map(ft => (
                         <div key={ft.id} className="flex items-center space-x-2">
                             <Checkbox 
                                 id={`ft-${ft.id}`} 
@@ -331,9 +341,12 @@ export default function ManageFeeGroupsPage() {
                                     setSelectedFeeTypeIdsForGroup(prev => checked ? [...prev, ft.id] : prev.filter(id => id !== ft.id))
                                 }}
                             />
-                            <Label htmlFor={`ft-${ft.id}`} className="font-normal">{ft.display_name}</Label>
+                            <Label htmlFor={`ft-${ft.id}`} className="font-normal">{(ft as FeeType).display_name || ft.name} <span className="text-xs text-muted-foreground">({(ft as any).type === 'installment' ? 'Installment' : 'Fee Type'})</span></Label>
                         </div>
                     ))}
+                    {allFeeTypesAndInstallments.length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center p-2">No fee types or installments found. Create some first.</p>
+                    )}
                   </div>
                 </Card>
               </div>
