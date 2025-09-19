@@ -157,7 +157,7 @@ export default function FeesManagementPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-green-600">Collection Reports</CardTitle>
@@ -196,6 +196,19 @@ export default function FeesManagementPage() {
                         <Link href="/admin/fee-reports/headwise-dues-report" className="text-primary hover:underline">Student Fee Type Wise</Link>
                         <Link href="/admin/fee-reports/all-student-dues-report" className="text-primary hover:underline">Class Wise Dues Report</Link>
                         <Link href="/admin/student-fees" className="text-primary hover:underline">Student Payment</Link>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-indigo-600">General Reports</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col space-y-2 text-sm">
+                        <Link href="/admin/fee-reports/collection-report" className="text-primary hover:underline">All Fee Transaction</Link>
+                        <Link href="/admin/fee-reports/collection-report" className="text-primary hover:underline">Class Wise Fees Transaction</Link>
+                        <Link href="/admin/fee-reports/installmentwise-collection-report" className="text-primary hover:underline">Installment Wise Fees Transaction</Link>
+                        <Link href="/admin/fee-reports/online-fee-transaction-report" className="text-primary hover:underline">Daily Online Fee Payment</Link>
+                        <Link href="/admin/fee-reports/headwise-collection-report" className="text-primary hover:underline">Headwise Fee Transaction</Link>
                     </CardContent>
                 </Card>
               </div>
