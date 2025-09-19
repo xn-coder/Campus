@@ -191,8 +191,7 @@ export default function FeesManagementPage() {
                         <CardTitle className="text-blue-600">Student Wise Reports</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col space-y-2 text-sm">
-                        <Link href="/admin/fee-reports/consolidated-fee-report" className="text-primary hover:underline">Consolidated Fee Report</Link>
-                        <Link href="#" className="text-muted-foreground cursor-not-allowed">Student Wise Fees (Coming Soon)</Link>
+                        <Link href="/admin/fee-reports/consolidated-fee-report" className="text-primary hover:underline">Student Wise Fee Report</Link>
                         <Link href="#" className="text-muted-foreground cursor-not-allowed">Group Wise Fees (Coming Soon)</Link>
                         <Link href="#" className="text-muted-foreground cursor-not-allowed">Student Fee Type Wise (Coming Soon)</Link>
                         <Link href="#" className="text-muted-foreground cursor-not-allowed">Class Wise (Coming Soon)</Link>
