@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Theme (Default) */
+    --background: 0 0% 100%; /* white */
+    --foreground: 220 40% 15%; /* very dark desaturated blue, almost black */
+
+    --muted: 220 30% 95%; /* very light blue-gray */
+    --muted-foreground: 220 20% 45%; /* medium blue-gray */
+
+    --popover: 0 0% 100%; /* white */
+    --popover-foreground: 220 40% 15%;
+
+    --card: 0 0% 100%; /* white cards */
+    --card-foreground: 220 40% 15%;
+
+    --border: 220 20% 88%; /* light blue-gray border */
+    --input: 220 30% 97%; /* very light blue-gray input background */
+
+    --primary: 220 70% 45%; /* navy blue */
+    --primary-foreground: 0 0% 100%; /* white */
+
+    --secondary: 220 70% 45%; /* navy blue - UPDATED */
+    --secondary-foreground: 0 0% 100%; /* white - UPDATED for contrast */
+
+    --accent: 210 80% 55%; /* a brighter, slightly lighter blue for accents */
+    --accent-foreground: 0 0% 100%; /* white */
+
+    --destructive: 0 70% 55%; /* red */
+    --destructive-foreground: 0 0% 98%;
+
+    --ring: 210 80% 55%; /* brighter blue for focus rings */
+    --radius: 0.5rem;
+
+    /* Sidebar specific colors for light mode */
+    --sidebar-background: 220 30% 96%; /* very light, slightly desaturated blue-gray */
+    --sidebar-foreground: 220 50% 25%; /* dark navy */
+    --sidebar-primary: 220 70% 45%; /* navy blue, same as primary */
+    --sidebar-primary-foreground: 0 0% 100%; /* white */
+    --sidebar-accent: 220 40% 90%; /* hover color - light blue-gray */
+    --sidebar-accent-foreground: 220 70% 35%; /* darker navy on hover */
+    --sidebar-border: 220 20% 88%; /* light border for sidebar elements */
+    --sidebar-ring: 210 80% 55%;
+
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+
+  .dark {
+    /* Dark Theme */
+    --background: 220 15% 10%; /* Very Dark Blue/Gray */
+    --foreground: 210 20% 90%; /* Light Gray for text */
+
+    --muted: 220 15% 20%;
+    --muted-foreground: 210 15% 65%;
+
+    --popover: 220 15% 8%;
+    --popover-foreground: 210 20% 90%;
+
+    --card: 220 15% 15%; /* Content background */
+    --card-foreground: 210 20% 90%;
+
+    --border: 220 15% 25%;
+    --input: 220 15% 13%;
+
+    --primary: 175 60% 45%; /* Teal */
+    --primary-foreground: 0 0% 100%; /* White text on Teal */
+
+    --secondary: 220 15% 22%;
+    --secondary-foreground: 210 20% 90%;
+
+    --accent: 175 60% 45%; /* Teal for general accent */
+    --accent-foreground: 0 0% 100%; /* White text on Teal */
+
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 98%;
+
+    --ring: 175 60% 45%; /* Teal for focus rings */
+    
+    /* Sidebar specific colors for dark mode */
+    --sidebar-background: 220 15% 12%;
+    --sidebar-foreground: 210 20% 85%;
+    --sidebar-primary: 175 65% 50%; /* Active sidebar item */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 15% 18%; /* Hover color */
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 220 15% 20%;
+    --sidebar-ring: 175 60% 45%;
+    
+    --chart-1: 220 70% 50%; /* Keep dark theme chart colors */
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+    .font-certificate {
+        font-family: 'Times New Roman', Times, serif;
+    }
+}
+
+
+/* Styles for react-day-picker event highlighting */
+.rdp-day_hasEvents:not(.rdp-day_selected):not(.rdp-day_today) {
+  position: relative;
+}
+
+.rdp-day_hasEvents:not(.rdp-day_selected):not(.rdp-day_today)::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; /* Adjust vertical position of the dot */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px; /* Size of the dot */
+  height: 5px; /* Size of the dot */
+  border-radius: 50%;
+  background-color: hsl(var(--primary)); /* Dot color */
+}
+
+/* Ensure dot is visible and possibly different color if day is selected */
+.rdp-day_hasEvents.rdp-day_selected::after {
+  content: ''; /* Ensure pseudo-element is created */
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary-foreground)); /* Dot color for selected day */
+}
+
+/* Ensure dot is visible and possibly different color if day is today */
+.rdp-day_hasEvents.rdp-day_today:not(.rdp-day_selected)::after {
+  content: ''; /* Ensure pseudo-element is created */
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: hsl(var(--primary)); /* Dot color for today, if not selected */
+}
+
+/* Styles for react-day-picker attendance highlighting */
+.rdp-day_present:not(.rdp-day_selected) {
+  @apply bg-green-100 text-green-900 dark:bg-green-900/50 dark:text-green-200;
+}
+.rdp-day_absent:not(.rdp-day_selected) {
+  @apply bg-red-100 text-red-900 dark:bg-red-900/50 dark:text-red-200;
+}
+.rdp-day_late:not(.rdp-day_selected) {
+  @apply bg-yellow-100 text-yellow-900 dark:bg-yellow-900/50 dark:text-yellow-200;
+}
+.rdp-day_excused:not(.rdp-day_selected) {
+  @apply bg-blue-100 text-blue-900 dark:bg-blue-900/50 dark:text-blue-200;
+}
+.rdp-day_holiday:not(.rdp-day_selected) {
+  @apply bg-purple-100 text-purple-900 dark:bg-purple-900/50 dark:text-purple-200;
+}
+
+
+.rdp-day_present.rdp-day_today:not(.rdp-day_selected),
+.rdp-day_absent.rdp-day_today:not(.rdp-day_selected),
+.rdp-day_late.rdp-day_today:not(.rdp-day_selected),
+.rdp-day_excused.rdp-day_today:not(.rdp-day_selected),
+.rdp-day_holiday.rdp-day_today:not(.rdp-day_selected) {
+  @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .printable-area {
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
+  [data-printable="false"] {
+    display: none !important;
+  }
+
+  .print-card {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
+
+.no-screenshot {
+    position: relative;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.no-screenshot::after {
+    content: "";
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: transparent;
+    pointer-events: none;
+}
+
+@media print {
+    .no-screenshot::after {
+        background-color: white !important;
+    }
+}

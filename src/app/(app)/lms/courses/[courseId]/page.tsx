@@ -1,0 +1,285 @@
+
+
+"use client";
+
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import PageHeader from '@/components/shared/page-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Progress } from '@/components/ui/progress';
+import { Lock, Loader2, BookOpen, Video, FileText, Users, Award, FileQuestion, CheckCircle, Presentation, Eye, Music, MousePointerSquareDashed, ListVideo, Code } from 'lucide-react';
+import type { Course, CourseResource, UserRole, LessonContentResource } from '@/types';
+import Link from 'next/link';
+import { getCourseForViewingAction, checkUserEnrollmentForCourseViewAction, getCompletionStatusAction } from './actions';
+import { supabase } from '@/lib/supabaseClient';
+import { useToast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+
+function ViewCoursePageContent() {
+  const params = useParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const courseId = params.courseId as string;
+  const isPreview = searchParams.get('preview') === 'true';
+
+  const [course, setCourse] = useState<(Course & { resources: CourseResource[] }) | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
+  
+  const [completedResources, setCompletedResources] = useState<Record<string, boolean>>({});
+  const [progress, setProgress] = useState(0);
+
+  const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
+  const [currentStudentName, setCurrentStudentName] = useState<string>('');
+  const [currentSchoolName, setCurrentSchoolName] = useState<string>('');
+  const [openLessons, setOpenLessons] = useState<string[]>([]);
+
+  const calculateProgress = useCallback((courseToCalc: (Course & { resources: CourseResource[] }) | null, completed: Record<string, boolean>) => {
+    if (!courseToCalc) return 0;
+    const lessons = courseToCalc.resources.filter(r => r.type === 'note');
+    if (lessons.length === 0) return 0;
+
+    const allLessonContents = lessons.flatMap(lesson => {
+      try {
+        const content = JSON.parse(lesson.url_or_content || '[]');
+        return Array.isArray(content) ? content as LessonContentResource[] : [];
+      } catch { return []; }
+    });
+
+    if (allLessonContents.length === 0) return 0;
+
+    const completedCount = allLessonContents.filter(res => completed[res.id]).length;
+    return Math.round((completedCount / allLessonContents.length) * 100);
+  }, []);
+
+  const fetchData = useCallback(async () => {
+      setIsLoading(true);
+      setPageError(null);
+
+      const userId = localStorage.getItem('currentUserId');
+      const role = localStorage.getItem('currentUserRole') as UserRole | null;
+      setCurrentUserRole(role);
+
+      if (!userId || !role) {
+        setPageError("User session information is missing. Please log in again.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const enrollmentResult = await checkUserEnrollmentForCourseViewAction(courseId, userId, role, isPreview);
+      if (!enrollmentResult.ok) {
+        setPageError(enrollmentResult.message || "Could not verify enrollment status.");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsEnrolled(enrollmentResult.isEnrolled);
+
+      if (!enrollmentResult.isEnrolled && !isPreview) {
+        setIsLoading(false);
+        return;
+      }
+      
+      const courseResult = await getCourseForViewingAction(courseId);
+      
+      if (courseResult.ok && courseResult.course) {
+        setCourse(courseResult.course);
+        if (role === 'student') {
+            const { data: user } = await supabase.from('users').select('name, school_id').eq('id', userId).single();
+            setCurrentStudentName(user?.name || 'Valued Student');
+            if (user?.school_id) {
+              const { data: school } = await supabase.from('schools').select('name').eq('id', user.school_id).single();
+              setCurrentSchoolName(school?.name || 'CampusHub');
+            } else {
+                setCurrentSchoolName('CampusHub');
+            }
+            
+            const completionResult = await getCompletionStatusAction(userId, courseId);
+            if (completionResult.ok && completionResult.completedResources) {
+                setCompletedResources(completionResult.completedResources);
+                const initialProgress = calculateProgress(courseResult.course, completionResult.completedResources);
+                setProgress(initialProgress);
+            }
+        }
+        
+        // Auto-open first lesson
+        const firstLessonId = courseResult.course.resources.find(r => r.type === 'note')?.id;
+        if(firstLessonId) {
+            setOpenLessons([firstLessonId]);
+        }
+
+      } else {
+        setPageError(courseResult.message || "Failed to load course details.");
+      }
+      
+      setIsLoading(false);
+  }, [courseId, toast, isPreview, calculateProgress]);
+
+
+  useEffect(() => {
+    if (courseId) {
+      fetchData();
+    }
+  }, [courseId, fetchData]);
+
+  const getResourceIcon = (type: string) => {
+    const props = { className: "mr-3 h-5 w-5 text-primary shrink-0" };
+    switch(type) {
+      case 'ebook': return <BookOpen {...props} />;
+      case 'video': return <Video {...props} />;
+      case 'note': return <FileText {...props} />;
+      case 'webinar': return <Users {...props} />;
+      case 'quiz': return <FileQuestion {...props} />;
+      case 'ppt': return <Presentation {...props} />;
+      case 'audio': return <Music {...props} />;
+      case 'drag_and_drop': return <MousePointerSquareDashed {...props} />;
+      case 'youtube_playlist': return <ListVideo {...props} />;
+      case 'web_page': return <Code {...props} />;
+      default: return null;
+    }
+  };
+
+  const handleStartCourse = () => {
+    const firstLessonId = course?.resources.find(r => r.type === 'note')?.id;
+    if (firstLessonId) {
+      setOpenLessons([firstLessonId]);
+    }
+  };
+  
+  if (isLoading) {
+    return <div className="text-center py-10 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin mr-2"/> Loading course content...</div>;
+  }
+
+  if (pageError) {
+    return <div className="text-center py-10 text-destructive">{pageError}</div>;
+  }
+  
+  if (!isEnrolled && !isPreview) {
+    return (
+      <div className="flex flex-col gap-6 items-center justify-center min-h-[60vh]">
+        <PageHeader title="Access Denied" />
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center"><Lock className="mr-2 h-6 w-6 text-destructive" /> Not Enrolled</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>You are not enrolled in this course. Please enroll or activate the course to view its content.</p>
+            <Button asChild className="mt-4">
+              <Link href="/lms/available-courses">Back to Available Courses</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return <div className="text-center py-10 text-destructive">Course data could not be loaded.</div>;
+  }
+  
+  const lessons = course.resources.filter(r => r.type === 'note');
+  const isAdminViewing = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader 
+        title={course.title} 
+        description={course.description || "No description available."}
+        actions={
+            lessons.length > 0 && !isPreview ? <Button onClick={handleStartCourse}>Start Course</Button> : null
+        }
+      />
+      
+      {!isPreview && (
+        <Card>
+            <CardHeader>
+                <CardTitle>Course Progress</CardTitle>
+                <div className="flex items-center gap-4 pt-2">
+                    <Progress value={progress} className="flex-1"/>
+                    <span className="font-bold text-lg">{progress}% Complete</span>
+                </div>
+            </CardHeader>
+            {progress === 100 && (
+                <CardFooter>
+                     <Button asChild>
+                        <Link href={`/lms/courses/${courseId}/certificate?studentName=${encodeURIComponent(currentStudentName)}&courseName=${encodeURIComponent(course.title)}&schoolName=${encodeURIComponent(currentSchoolName)}&completionDate=${new Date().toISOString()}&certificateId=${uuidv4()}`}>
+                            <Award className="mr-2 h-4 w-4" /> Generate Certificate
+                        </Link>
+                    </Button>
+                </CardFooter>
+            )}
+        </Card>
+      )}
+
+      <Card>
+          <CardHeader>
+              <CardTitle>{isPreview ? 'Course Preview' : 'Course Content'}</CardTitle>
+              <CardDescription>{isPreview ? 'This is a preview. Enroll to access the full content.' : 'Work your way through the lessons below.'}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {lessons.length > 0 ? (
+                <Accordion 
+                    type="multiple" 
+                    className="w-full space-y-2"
+                    value={openLessons}
+                    onValueChange={setOpenLessons}
+                >
+                 {lessons.map((lesson, lessonIndex) => {
+                    const lessonContents: LessonContentResource[] = JSON.parse(lesson.url_or_content || '[]') as LessonContentResource[];
+                    
+                    return (
+                        <AccordionItem value={lesson.id} key={lesson.id} className="border rounded-md">
+                            <AccordionTrigger className={`px-4 hover:no-underline font-semibold text-lg`}>
+                                <div className="flex items-center">
+                                    {lesson.title}
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pt-2 border-t">
+                               <div className="space-y-2 py-2">
+                                   {lessonContents.length > 0 ? lessonContents.map(res => {
+                                       return (
+                                           <div key={res.id} className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 transition-colors">
+                                                <Link href={`/lms/courses/${courseId}/${res.id}${isPreview ? '?preview=true' : ''}`} className="flex-grow">
+                                                    <div className="flex items-center p-1 font-medium">
+                                                        {getResourceIcon(res.type)}
+                                                        <span>{res.title}</span>
+                                                    </div>
+                                                </Link>
+                                                <div className="flex items-center space-x-2 pl-4 shrink-0">
+                                                    {!isPreview && completedResources[res.id] && (
+                                                        <CheckCircle className="h-5 w-5 text-green-500" />
+                                                    )}
+                                                </div>
+                                           </div>
+                                       );
+                                   }) : <p className="text-sm text-muted-foreground text-center py-2">This lesson is empty.</p>}
+                               </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )
+                 })}
+                </Accordion>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">No lessons have been added to this course yet.</p>
+            )}
+          </CardContent>
+      </Card>
+
+      <Button variant="outline" onClick={() => router.push(isAdminViewing ? '/admin/lms/courses' : '/lms/available-courses')} className="mt-4 self-start">
+        Back to Courses
+      </Button>
+    </div>
+  );
+}
+
+export default function ViewCoursePage() {
+    return (
+        <Suspense>
+            <ViewCoursePageContent />
+        </Suspense>
+    )
+}
