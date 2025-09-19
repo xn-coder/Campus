@@ -195,7 +195,7 @@ export default function FeesManagementPage() {
                         <Link href="/admin/fee-reports/group-wise-fees-report" className="text-primary hover:underline">Group Wise Fees</Link>
                         <Link href="/admin/fee-reports/headwise-dues-report" className="text-primary hover:underline">Student Fee Type Wise</Link>
                         <Link href="/admin/fee-reports/all-student-dues-report" className="text-primary hover:underline">Class Wise Dues Report</Link>
-                        <Link href="#" className="text-muted-foreground cursor-not-allowed">Student Payment (Coming Soon)</Link>
+                        <Link href="/admin/student-fees" className="text-primary hover:underline">Student Payment</Link>
                     </CardContent>
                 </Card>
               </div>
