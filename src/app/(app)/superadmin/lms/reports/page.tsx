@@ -3,9 +3,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import PageHeader from '@/components/shared/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Library, Users, Building, Globe, Calendar as CalendarIcon, Download, FileDown, BarChart3 } from 'lucide-react';
+import { Loader2, Library, Users, Building, Globe, Calendar as CalendarIcon, Download, FileDown, BarChart3, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { getLmsGlobalReportAction, type LmsGlobalReportData } from './actions';
 import { Button } from '@/components/ui/button';
@@ -21,12 +21,15 @@ import {
   ChartConfig,
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import { Input } from '@/components/ui/input';
 
 const chartConfig = {
   count: { label: "Count", color: "hsl(var(--chart-1))" },
 } satisfies ChartConfig;
 
 type ChartDataType = 'assignments' | 'enrollments';
+
+const ITEMS_PER_PAGE = 10;
 
 export default function SuperAdminLmsReportsPage() {
     const { toast } = useToast();
@@ -39,6 +42,8 @@ export default function SuperAdminLmsReportsPage() {
         to: new Date(),
     });
     const [chartType, setChartType] = useState<ChartDataType>('enrollments');
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     const fetchReportData = useCallback(async () => {
         setIsLoading(true);
@@ -96,6 +101,19 @@ export default function SuperAdminLmsReportsPage() {
             .map(d => ({ name: d.title, count: d[dataKey] }));
     }, [reportData, chartType]);
 
+    const filteredReportData = useMemo(() => {
+        return reportData.filter(course =>
+            course.title.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [reportData, searchTerm]);
+
+    const paginatedReportData = useMemo(() => {
+        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+        return filteredReportData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    }, [filteredReportData, currentPage]);
+
+    const totalPages = Math.ceil(filteredReportData.length / ITEMS_PER_PAGE);
+
     return (
         <div className="flex flex-col gap-6">
             <PageHeader
@@ -104,7 +122,7 @@ export default function SuperAdminLmsReportsPage() {
             />
 
             <div className="grid gap-6">
-                <Card>
+                 <Card className="lg:col-span-1">
                     <CardHeader>
                         <CardTitle className="flex items-center"><BarChart3 className="mr-2 h-5 w-5"/>Top 10 Courses</CardTitle>
                         <Select value={chartType} onValueChange={(val) => setChartType(val as ChartDataType)}>
@@ -129,7 +147,7 @@ export default function SuperAdminLmsReportsPage() {
                          </ChartContainer>
                         }
                     </CardContent>
-                </Card>>
+                </Card>
                 <Card>
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -143,7 +161,7 @@ export default function SuperAdminLmsReportsPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="flex flex-wrap gap-2 mb-4">
+                        <div className="flex flex-wrap gap-2 mb-4 items-end">
                             <Select value={filterPreset} onValueChange={handleFilterPresetChange}>
                                 <SelectTrigger className="w-full sm:w-[180px]"><SelectValue /></SelectTrigger>
                                 <SelectContent>
@@ -171,11 +189,20 @@ export default function SuperAdminLmsReportsPage() {
                                 {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                                 Apply Filter
                             </Button>
+                            <div className="relative flex-grow min-w-[200px] sm:flex-grow-0 sm:ml-auto">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                    placeholder="Search courses..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    className="pl-8 w-full"
+                                />
+                            </div>
                         </div>
                         {isLoading ? (
                             <div className="text-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                        ) : reportData.length === 0 ? (
-                            <p className="text-center text-muted-foreground py-10">No courses found for the selected period.</p>
+                        ) : paginatedReportData.length === 0 ? (
+                            <p className="text-center text-muted-foreground py-10">No courses found for the selected criteria.</p>
                         ) : (
                             <Table>
                                 <TableHeader>
@@ -187,7 +214,7 @@ export default function SuperAdminLmsReportsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {reportData.map(course => (
+                                    {paginatedReportData.map(course => (
                                         <TableRow key={course.id}>
                                             <TableCell className="font-medium">{course.title}</TableCell>
                                             <TableCell>{course.schoolName || 'Global'}</TableCell>
@@ -199,6 +226,17 @@ export default function SuperAdminLmsReportsPage() {
                             </Table>
                         )}
                     </CardContent>
+                    {totalPages > 1 && (
+                        <CardFooter className="flex justify-end items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1}>
+                                <ChevronLeft className="h-4 w-4" /> Previous
+                            </Button>
+                            <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+                            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages}>
+                                Next <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </CardFooter>
+                    )}
                 </Card>
             </div>
         </div>
