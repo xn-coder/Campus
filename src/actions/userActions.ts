@@ -32,3 +32,28 @@ export async function updateUserPasswordAction(userId: string, newPassword: stri
     return { ok: false, message: `An unexpected error occurred: ${error.message}` };
   }
 }
+
+export async function deactivateSelfAction(userId: string): Promise<{ ok: boolean; message: string }> {
+  if (!userId) {
+    return { ok: false, message: 'User ID is required.' };
+  }
+
+  const supabase = createSupabaseServerClient();
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ status: 'Inactive' })
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    return { ok: true, message: 'Account deactivated successfully.' };
+
+  } catch (error: any) {
+    console.error('Error deactivating account:', error);
+    return { ok: false, message: `An unexpected error occurred: ${error.message}` };
+  }
+}
+

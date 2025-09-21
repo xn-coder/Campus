@@ -13,13 +13,16 @@ import { Textarea } from '@/components/ui/textarea';
 import type { Student, User, ClassData } from '@/types';
 import { useState, useEffect, type FormEvent, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { KeyRound, School, Loader2, UserCog, Save, UploadCloud } from 'lucide-react';
+import { KeyRound, School, Loader2, UserCog, Save, UploadCloud, Trash2 } from 'lucide-react';
 import { getStudentProfileDataAction, updateStudentProfileAction } from './actions';
-import { updateUserPasswordAction } from '@/actions/userActions';
+import { updateUserPasswordAction, deactivateSelfAction } from '@/actions/userActions';
 import Image from 'next/image';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useRouter } from 'next/navigation';
 
 export default function StudentProfilePage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [studentDetails, setStudentDetails] = useState<Student | null>(null);
   const [userDetails, setUserDetails] = useState<User | null>(null);
   const [classDetails, setClassDetails] = useState<ClassData | null>(null);
@@ -139,6 +142,24 @@ export default function StudentProfilePage() {
         setConfirmPassword('');
     } else {
         toast({title: "Error", description: result.message, variant: "destructive"});
+    }
+    setIsSubmitting(false);
+  };
+
+  const handleDeactivate = async () => {
+    if (!userDetails?.id) {
+      toast({ title: "Error", description: "User ID not found.", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await deactivateSelfAction(userDetails.id);
+    if (result.ok) {
+      toast({ title: "Account Deactivated", description: "You have been logged out." });
+      // Clear local storage and redirect to login
+      localStorage.clear();
+      router.push('/login');
+    } else {
+      toast({ title: "Error", description: result.message, variant: "destructive" });
     }
     setIsSubmitting(false);
   };
@@ -272,11 +293,9 @@ export default function StudentProfilePage() {
             <CardDescription>{userDetails.email}</CardDescription>
             <CardDescription className="flex items-center justify-center"><School className="mr-1 h-4 w-4"/> {classDisplayText}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline" className="w-full"><KeyRound className="mr-2 h-4 w-4" /> Reset Password</Button>
-                </DialogTrigger>
+                <DialogTrigger asChild><Button variant="outline" className="w-full"><KeyRound className="mr-2 h-4 w-4" /> Reset Password</Button></DialogTrigger>
                 <DialogContent>
                     <DialogHeader><DialogTitle>Reset Your Password</DialogTitle></DialogHeader>
                     <form onSubmit={handlePasswordSubmit}>
@@ -293,6 +312,23 @@ export default function StudentProfilePage() {
                     </form>
                 </DialogContent>
             </Dialog>
+            <AlertDialog>
+                <AlertDialogTrigger asChild><Button variant="destructive" className="w-full"><Trash2 className="mr-2 h-4 w-4"/> Deactivate Account</Button></AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action will deactivate your account and you will be logged out. You will not be able to log back in until an administrator reactivates your account.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeactivate} className="bg-destructive hover:bg-destructive/90">
+                            Deactivate
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
 
