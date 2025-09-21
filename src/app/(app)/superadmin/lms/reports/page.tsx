@@ -118,7 +118,7 @@ export default function SuperAdminLmsReportsPage() {
                     <CardContent>
                         {isLoading ? <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div> :
                          chartData.length === 0 ? <p className="text-muted-foreground text-center py-10">No data to display in chart.</p> :
-                         <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                         <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
                             <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
                                 <CartesianGrid horizontal={false} />
                                 <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" width={120} interval={0} />
@@ -129,7 +129,7 @@ export default function SuperAdminLmsReportsPage() {
                          </ChartContainer>
                         }
                     </CardContent>
-                </Card>
+                </Card>>
                 <Card>
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
