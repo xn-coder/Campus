@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -191,7 +192,7 @@ export default function TeacherAssignmentHistoryPage() {
                     <TableCell>{getClassSectionName(assignment.class_id)}</TableCell>
                     <TableCell>{getSubjectName(assignment.subject_id)}</TableCell>
                     <TableCell>{format(parseISO(assignment.due_date), 'PP')}</TableCell>
-                    <TableCell className="max-w-xs truncate">{assignment.description}</TableCell>
+                    <TableCell className="max-w-xs truncate" title={assignment.description || ''}>{assignment.description}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild>
