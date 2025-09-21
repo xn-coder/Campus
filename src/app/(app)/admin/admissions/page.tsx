@@ -29,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useSearchParams } from 'next/navigation';
+import { supabase } from '@/lib/supabaseClient';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -82,18 +83,7 @@ function AdmissionsPageContent() {
         setFeePayments(pageDataResult.feePayments || []);
         setFeeCategories(pageDataResult.feeCategories || []);
         setAcademicYears(pageDataResult.academicYears || []);
-        // We need the full student records for editing
-        const studentIds = (pageDataResult.admissions || []).map(a => a.student_profile_id).filter(Boolean) as string[];
-        if (studentIds.length > 0) {
-            const { data: studentsData } = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/students?id=in.(${studentIds.join(',')})`, {
-                headers: {
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                    'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`
-                }
-            }).then(res => res.json());
-             setAllStudents(studentsData || []);
-        }
-
+        // No longer need to pre-fetch all students, it will be done on-demand.
       } else {
         toast({ title: "Error loading data", description: pageDataResult.message, variant: "destructive" });
         setAdmissionRecords([]);
@@ -169,23 +159,27 @@ function AdmissionsPageContent() {
 
   const getFeeCategoryName = (categoryId: string) => feeCategories.find(fc => fc.id === categoryId)?.name || 'N/A';
   
-  const handleOpenEditDialog = (studentId?: string | null) => {
+  const handleOpenEditDialog = async (studentId?: string | null) => {
     if (!studentId) {
         toast({ title: "Error", description: "This admission record is not linked to a student profile.", variant: "destructive" });
         return;
     }
-    const student = allStudents.find(s => s.id === studentId);
-    if (student) {
-        setEditingStudent(student);
-        setEditStudentName(student.name);
-        setEditStudentEmail(student.email);
-        setEditStudentRollNumber(student.roll_number || '');
-        setEditStudentClassId(student.class_id || undefined);
-        setEditStudentAcademicYearId(student.academic_year_id || undefined);
-        setIsEditDialogOpen(true);
-    } else {
-        toast({ title: "Error", description: "Could not find the details for this student.", variant: "destructive" });
+    setIsSubmitting(true);
+    const { data: student, error } = await supabase.from('students').select('*').eq('id', studentId).single();
+    setIsSubmitting(false);
+
+    if (error || !student) {
+      toast({ title: "Error", description: "Could not find the details for this student.", variant: "destructive" });
+      return;
     }
+
+    setEditingStudent(student);
+    setEditStudentName(student.name);
+    setEditStudentEmail(student.email);
+    setEditStudentRollNumber(student.roll_number || '');
+    setEditStudentClassId(student.class_id || undefined);
+    setEditStudentAcademicYearId(student.academic_year_id || undefined);
+    setIsEditDialogOpen(true);
   };
   
   const handleEditStudentSubmit = async (e: FormEvent) => {
@@ -351,8 +345,8 @@ function AdmissionsPageContent() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => handleOpenEditDialog(record.student_profile_id)} disabled={!record.student_profile_id}>
-                                <Edit2 className="mr-2 h-4 w-4"/> Edit Details
+                            <DropdownMenuItem onSelect={() => handleOpenEditDialog(record.student_profile_id)} disabled={!record.student_profile_id || isSubmitting}>
+                                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Edit2 className="mr-2 h-4 w-4"/>} Edit Details
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
