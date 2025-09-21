@@ -103,8 +103,34 @@ export default function SuperAdminLmsReportsPage() {
                 description="View aggregate statistics for all courses across the platform."
             />
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                <Card className="lg:col-span-2">
+            <div className="grid gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center"><BarChart3 className="mr-2 h-5 w-5"/>Top 10 Courses</CardTitle>
+                        <Select value={chartType} onValueChange={(val) => setChartType(val as ChartDataType)}>
+                            <SelectTrigger className="max-w-sm"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="enrollments">By Total Enrollments</SelectItem>
+                                <SelectItem value="assignments">By School Assignments</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div> :
+                         chartData.length === 0 ? <p className="text-muted-foreground text-center py-10">No data to display in chart.</p> :
+                         <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+                            <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
+                                <CartesianGrid horizontal={false} />
+                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" width={120} interval={0} />
+                                <XAxis dataKey="count" type="number" hide />
+                                <Tooltip cursor={{ fill: "hsl(var(--muted))" }} content={<ChartTooltipContent indicator="line" />}/>
+                                <Bar dataKey="count" layout="vertical" fill="var(--color-count)" radius={4} />
+                            </BarChart>
+                         </ChartContainer>
+                        }
+                    </CardContent>
+                </Card>
+                <Card>
                     <CardHeader>
                         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                             <div>
@@ -172,32 +198,6 @@ export default function SuperAdminLmsReportsPage() {
                                 </TableBody>
                             </Table>
                         )}
-                    </CardContent>
-                </Card>
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle className="flex items-center"><BarChart3 className="mr-2 h-5 w-5"/>Top 10 Courses</CardTitle>
-                        <Select value={chartType} onValueChange={(val) => setChartType(val as ChartDataType)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="enrollments">By Total Enrollments</SelectItem>
-                                <SelectItem value="assignments">By School Assignments</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </CardHeader>
-                    <CardContent>
-                        {isLoading ? <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div> :
-                         chartData.length === 0 ? <p className="text-muted-foreground text-center py-10">No data to display in chart.</p> :
-                         <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
-                            <BarChart accessibilityLayer data={chartData} layout="vertical" margin={{ left: 10, right: 10 }}>
-                                <CartesianGrid horizontal={false} />
-                                <YAxis dataKey="name" type="category" tickLine={false} tickMargin={10} axisLine={false} className="text-xs" width={80} interval={0} />
-                                <XAxis dataKey="count" type="number" hide />
-                                <Tooltip cursor={{ fill: "hsl(var(--muted))" }} content={<ChartTooltipContent indicator="line" />}/>
-                                <Bar dataKey="count" layout="vertical" fill="var(--color-count)" radius={4} />
-                            </BarChart>
-                         </ChartContainer>
-                        }
                     </CardContent>
                 </Card>
             </div>
