@@ -20,12 +20,14 @@ export default function TeacherLeaveRequestsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentTeacherId, setCurrentTeacherId] = useState<string | null>(null);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchTeacherAndLeaveData = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     const teacherUserId = localStorage.getItem('currentUserId');
     if (!teacherUserId) {
-      toast({ title: "Error", description: "Teacher not identified.", variant: "destructive" });
+      setError("Teacher not identified.");
       setIsLoading(false);
       return;
     }
@@ -36,13 +38,16 @@ export default function TeacherLeaveRequestsPage() {
         setLeaveRequests(result.applications || []);
         setCurrentTeacherId(result.teacherProfileId || null);
         setCurrentSchoolId(result.schoolId || null);
+        if(!result.teacherProfileId || !result.schoolId) {
+            setError("Could not load teacher profile or school association.");
+        }
     } else {
-        toast({ title: "Error", description: result.message || "Failed to load leave requests.", variant: "destructive" });
+        setError(result.message || "Failed to load leave requests.");
         setLeaveRequests([]);
     }
 
     setIsLoading(false);
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     fetchTeacherAndLeaveData();
@@ -61,15 +66,16 @@ export default function TeacherLeaveRequestsPage() {
     }
   }
 
-  if (isLoading && !currentTeacherId) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /> <span className="ml-2">Loading data...</span></div>;
   }
-   if (!currentTeacherId || !currentSchoolId) {
+  
+  if (error) {
        return (
         <div className="flex flex-col gap-6">
         <PageHeader title="Student Leave Requests" />
         <Card><CardContent className="pt-6 text-center text-destructive">
-            Could not load teacher profile or school association.
+            {error}
         </CardContent></Card>
         </div>
     );

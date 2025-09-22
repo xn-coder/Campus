@@ -2,7 +2,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
-import { getLeaveRequestsAction } from '@/actions/leaveActions';
+import { getLeaveRequestsAction } from '@/app/(app)/leave-application/actions';
 import type { StoredLeaveApplicationDB } from '@/types';
 
 export async function getLeaveRequestsForTeacherAction(teacherUserId: string): Promise<{
