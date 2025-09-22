@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { StoredLeaveApplicationDB, UserRole } from '@/types';
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { getLeaveRequestsAction } from '@/actions/leaveActions';
+import { getLeaveRequestsAction } from './actions';
 import { format, parseISO } from 'date-fns';
 import { History, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';

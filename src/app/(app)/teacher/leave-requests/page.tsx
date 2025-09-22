@@ -9,7 +9,7 @@ import type { UserRole, Student, StoredLeaveApplicationDB, User } from '@/types'
 import { useState, useEffect, useCallback } from 'react';
 import { ClipboardCheck, ExternalLink, User as UserIcon, CalendarDays, MessageSquare, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { updateLeaveStatusAction } from '@/actions/leaveActions';
+import { updateLeaveStatusAction } from '@/app/(app)/leave-application/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { getLeaveRequestsForTeacherAction } from './actions';
@@ -106,7 +106,7 @@ export default function TeacherLeaveRequestsPage() {
               <TableBody>
                 {leaveRequests.map((req) => (
                   <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.student_name}</TableCell>
+                    <TableCell className="font-medium">{(req.applicant as any)?.name}</TableCell>
                     <TableCell>{format(parseISO(req.submission_date), 'PPpp')}</TableCell>
                     <TableCell className="max-w-xs truncate">{req.reason}</TableCell>
                     <TableCell>

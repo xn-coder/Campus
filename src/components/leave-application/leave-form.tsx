@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, XCircle, Loader2, UploadCloud } from 'lucide-react';
 import type { User, Student, UserRole, SchoolEntry, StoredLeaveApplicationDB, Teacher, Accountant } from '@/types';
-import { submitLeaveApplicationAction, getUserProfileForLeaveAction } from '@/actions/leaveActions';
+import { submitLeaveApplicationAction, getUserProfileForLeaveAction } from '@/app/(app)/leave-application/actions';
 import { useToast } from '@/hooks/use-toast';
 import { fileToDataUri } from '@/lib/utils';
 import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';

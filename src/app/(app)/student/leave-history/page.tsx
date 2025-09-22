@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import type { StoredLeaveApplicationDB } from '@/types';
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { getLeaveRequestsAction } from '@/actions/leaveActions';
+import { getLeaveRequestsAction } from '@/app/(app)/leave-application/actions';
 import { format, parseISO, isValid } from 'date-fns';
 import { History, Loader2, CheckCircle, XCircle, ExternalLink, MessageSquare, CalendarDays } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,8 +32,7 @@ export default function StudentLeaveHistoryPage() {
       
       const result = await getLeaveRequestsAction({ 
         school_id: schoolId,
-        student_user_id: studentUserId,
-        target_role: 'student'
+        applicant_user_id: studentUserId,
       });
 
       if (result.ok) {
