@@ -78,8 +78,8 @@ export async function getLmsSchoolReportAction(
     ] = await Promise.all([
       supabase.from('lms_course_resources').select('id, course_id, url_or_content, type').in('course_id', courseIds),
       supabase.from('lms_student_course_enrollments').select('course_id, student_id').in('course_id', courseIds).eq('school_id', schoolId),
-      supabase.from('lms_teacher_course_enrollments').select('course_id').in('course_id', courseIds).eq('school_id', schoolId),
-      supabase.from('lms_completion').select('student_id, course_id, resource_id').in('course_id', courseIds),
+      supabase.from('lms_teacher_course_enrollments').select('course_id, teacher_id').in('course_id', courseIds).eq('school_id', schoolId),
+      supabase.from('lms_completion').select('user_profile_id, course_id, resource_id').in('course_id', courseIds).eq('school_id', schoolId),
     ]);
 
     if (resourcesRes.error) throw new Error(`Failed to fetch resources: ${resourcesRes.error.message}`);
@@ -87,7 +87,7 @@ export async function getLmsSchoolReportAction(
     if (teacherEnrollmentsRes.error) throw new Error(`Failed to fetch teacher enrollments: ${teacherEnrollmentsRes.error.message}`);
     
     // Gracefully handle missing lms_completion table
-    let completions: { student_id: string; course_id: string; resource_id: string }[] = [];
+    let completions: { user_profile_id: string; course_id: string; resource_id: string }[] = [];
     if (completionsRes.error && completionsRes.error.message.includes('relation "public.lms_completion" does not exist')) {
         console.warn("LMS Completion table does not exist. Completion data will not be available in reports.");
     } else if (completionsRes.error) {
@@ -99,8 +99,9 @@ export async function getLmsSchoolReportAction(
 
     const allResources = resourcesRes.data || [];
     const studentEnrollments = studentEnrollmentsRes.data || [];
+    const teacherEnrollments = teacherEnrollmentsRes.data || [];
 
-    const teacherEnrollmentCounts = (teacherEnrollmentsRes.data || []).reduce(
+    const teacherEnrollmentCounts = teacherEnrollments.reduce(
       (acc, item) => {
         acc[item.course_id] = (acc[item.course_id] || 0) + 1;
         return acc;
@@ -132,7 +133,7 @@ export async function getLmsSchoolReportAction(
 
       enrolledStudents.forEach((enrollment) => {
         const studentCompletions = completions.filter(
-          (c) => c.student_id === enrollment.student_id && c.course_id === courseId
+          (c) => c.user_profile_id === enrollment.student_id && c.course_id === courseId
         ).length;
 
         if (studentCompletions === 0) {
