@@ -105,7 +105,7 @@ export async function createTeacherAction(
   try {
     const { data: existingUser, error: userFetchError } = await supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id, role')
       .eq('email', email)
       .single();
 
@@ -114,7 +114,14 @@ export async function createTeacherAction(
       return { ok: false, message: 'Database error checking email.' };
     }
     if (existingUser) {
-      return { ok: false, message: `A user with email ${email} already exists.` };
+      if (existingUser.role === 'teacher') {
+        const { count } = await supabaseAdmin.from('teachers').select('id', { count: 'exact', head: true }).eq('user_id', existingUser.id);
+        if (count && count > 0) {
+            return { ok: false, message: `A teacher with this email already exists.` };
+        }
+      } else {
+        return { ok: false, message: `A user with this email already exists but is not a teacher. Please use a different email.` };
+      }
     }
     
     const newUserId = uuidv4();
