@@ -9,7 +9,7 @@ export default function LeaveApplicationPage() {
     <div className="flex flex-col gap-6">
       <PageHeader 
         title="Leave Application" 
-        description="Submit your leave request. It will be sent to the appropriate person for review."
+        description="Submit your leave request for a specific date range. It will be sent to the appropriate person for review."
       />
       <LeaveForm />
     </div>
