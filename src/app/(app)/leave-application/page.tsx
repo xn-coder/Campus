@@ -71,53 +71,50 @@ export default function LeaveApplicationPage() {
         title="Leave Application"
         description="Submit your leave request and view the history of your past applications."
       />
-       <div className="grid md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <LeaveForm />
-        </div>
-        <div className="md:col-span-2">
-            <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5" />My Leave History</CardTitle>
-                  <CardDescription>A log of all your submitted leave requests.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {isLoading ? (
-                    <div className="text-center py-4 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin mr-2"/>Loading your leave history...</div>
-                  ) : leaveHistory.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-4">You have not submitted any leave requests.</p>
-                  ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>End Date</TableHead>
-                          <TableHead>Reason</TableHead>
-                          <TableHead>Status</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {leaveHistory.map((req) => (
-                          <TableRow key={req.id}>
-                            <TableCell>{formatDateSafe(req.start_date)}</TableCell>
-                            <TableCell>{formatDateSafe(req.end_date)}</TableCell>
-                            <TableCell className="max-w-xs truncate" title={req.reason}>{req.reason}</TableCell>
-                            <TableCell>
-                              <Badge variant={req.status === 'Approved' ? 'default' : req.status === 'Rejected' ? 'destructive' : 'secondary'}>
-                                {req.status === 'Approved' && <CheckCircle className="mr-1 h-3 w-3" />}
-                                {req.status === 'Rejected' && <XCircle className="mr-1 h-3 w-3" />}
-                                {req.status === 'Pending' && <Clock className="mr-1 h-3 w-3" />}
-                                {req.status}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                </CardContent>
-            </Card>
-        </div>
+      <div className="space-y-6">
+        <LeaveForm />
+        
+        <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center"><History className="mr-2 h-5 w-5" />My Leave History</CardTitle>
+              <CardDescription>A log of all your submitted leave requests.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-4 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin mr-2"/>Loading your leave history...</div>
+              ) : leaveHistory.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">You have not submitted any leave requests.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Start Date</TableHead>
+                      <TableHead>End Date</TableHead>
+                      <TableHead>Reason</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leaveHistory.map((req) => (
+                      <TableRow key={req.id}>
+                        <TableCell>{formatDateSafe(req.start_date)}</TableCell>
+                        <TableCell>{formatDateSafe(req.end_date)}</TableCell>
+                        <TableCell className="max-w-xs truncate" title={req.reason}>{req.reason}</TableCell>
+                        <TableCell>
+                          <Badge variant={req.status === 'Approved' ? 'default' : req.status === 'Rejected' ? 'destructive' : 'secondary'}>
+                            {req.status === 'Approved' && <CheckCircle className="mr-1 h-3 w-3" />}
+                            {req.status === 'Rejected' && <XCircle className="mr-1 h-3 w-3" />}
+                            {req.status === 'Pending' && <Clock className="mr-1 h-3 w-3" />}
+                            {req.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+        </Card>
       </div>
     </div>
   );
