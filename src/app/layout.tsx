@@ -3,9 +3,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
-import { SidebarProvider } from '@/components/ui/sidebar';
-import AppLayout from '@/components/layout/app-layout';
-import SidebarWrapper from '@/components/layout/sidebar-wrapper';
 
 export const metadata: Metadata = {
   title: 'CampusHub',
@@ -31,12 +28,7 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <SidebarProvider defaultOpen>
-            <AppLayout>
-              <SidebarWrapper />
-              {children}
-            </AppLayout>
-          </SidebarProvider>
+          {children}
           <Toaster />
         </ThemeProvider>
       </body>
