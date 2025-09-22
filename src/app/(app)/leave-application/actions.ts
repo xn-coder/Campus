@@ -122,7 +122,7 @@ export async function getLeaveRequestsAction(params: GetLeaveRequestsParams): Pr
         .from('students')
         .select('user_id')
         .in('class_id', teacherClassIds)
-        .eq('school_id', schoolId);
+        .eq('school_id', school_id);
       
       if (studentsError) throw studentsError;
       const studentUserIds = (studentsInClasses || []).map(s => s.user_id);
