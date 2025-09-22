@@ -45,13 +45,12 @@ export async function getAdminTeacherManagementPageDataAction(adminUserId: strin
     const supabase = createSupabaseServerClient();
     try {
         const { data: userRec, error: userErr } = await supabase.from('users').select('school_id').eq('id', adminUserId).single();
-        if (userErr && userErr.code !== 'PGRST116') {
-            throw new Error(`Failed to fetch user record: ${userErr.message}`);
-        }
         
         let schoolId = userRec?.school_id;
-        
-        if (!schoolId) {
+
+        if (userErr && userErr.code !== 'PGRST116') {
+             throw new Error(`Failed to fetch user record: ${userErr.message}`);
+        } else if (!schoolId) {
             const { data: schoolRec, error: schoolErr } = await supabase.from('schools').select('id').eq('admin_user_id', adminUserId).single();
             if (schoolErr && schoolErr.code !== 'PGRST116') {
                 throw new Error(`Failed to fetch school record: ${schoolErr.message}`);
@@ -61,6 +60,7 @@ export async function getAdminTeacherManagementPageDataAction(adminUserId: strin
             }
             schoolId = schoolRec.id;
         }
+
 
         const { data: teachers, error: teachersError } = await supabase
             .from('teachers')
@@ -344,3 +344,5 @@ export async function deleteTeacherAction(
     return { ok: false, message: `An unexpected error occurred: ${error.message}` };
   }
 }
+
+    
