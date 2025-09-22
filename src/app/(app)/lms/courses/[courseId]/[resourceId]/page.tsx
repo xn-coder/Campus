@@ -127,23 +127,19 @@ export default function CourseResourcePage() {
         const userId = localStorage.getItem('currentUserId');
         const role = localStorage.getItem('currentUserRole') as UserRole | null;
         
-        if (role !== 'student' && role !== 'teacher') {
+        if (isPreviewing) {
+            toast({title: "Preview Mode", description: "Progress is not saved in preview mode.", variant: "default"});
             setIsCompleted(true);
-            toast({title: "Completed", description: "You marked this resource as complete.", variant: "default"});
             return;
         }
 
-        if (role === 'teacher') {
-             setIsCompleted(true);
-             return;
-        }
-        
         if (!userId || !resource || !courseId) return;
 
         const result = await markResourceAsCompleteAction(userId, courseId, resourceId);
-        console.log(result);
+        
         if (result.ok) {
             setIsCompleted(true);
+            toast({title: "Completed!", description: "Your progress has been saved."});
             const { completedResources } = await getCompletionStatusAction(userId, courseId);
             if (completedResources && course) {
                 setOverallProgress(calculateProgress(course, completedResources));
@@ -151,7 +147,7 @@ export default function CourseResourcePage() {
         } else {
             toast({title: "Error", description: result.message, variant: "destructive"});
         }
-    }, [resource, courseId, resourceId, toast, course]);
+    }, [resource, courseId, resourceId, toast, course, isPreviewing]);
     
     const handleSubmitQuiz = useCallback(() => {
         if (quizResult) return; // Prevent re-submission
@@ -418,7 +414,7 @@ export default function CourseResourcePage() {
     }
     
     const isAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
-    const canMarkComplete = currentUserRole === 'student' || currentUserRole === 'teacher';
+    const canMarkComplete = !isPreviewing;
     const isNextDisabled = !nextResourceId || (isPreviewing ? false : (!isAdmin && !isCompleted));
     
     const backToCoursesPath = isAdmin
