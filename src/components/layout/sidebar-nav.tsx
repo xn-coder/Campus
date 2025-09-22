@@ -55,8 +55,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton'; 
-import { getDashboardDataAction } from '@/app/dashboard/actions';
-import { supabase } from '@/lib/supabaseClient';
 
 
 const superAdminNavItems: NavItem[] = [
@@ -90,7 +88,7 @@ const adminNavItems: NavItem[] = [
   { href: '/communication', label: 'Announcements', icon: Megaphone },
   { href: '/calendar-events', label: 'Calendar & Events', icon: CalendarDays },
   { href: '/admin/reports', label: 'Activity Reports', icon: BarChart3 },
-  { href: '/admin/leave-management', label: 'Leave Management', icon: ClipboardEdit, badgeId: 'pendingLeaveRequests' }, 
+  { href: '/admin/leave-management', label: 'Leave Management', badgeId: 'pendingLeaveRequests' }, 
 ];
 
 const teacherNavItems: NavItem[] = [
@@ -151,14 +149,16 @@ const lockedStudentFeatures = [
     '/student/apply-tc',
 ];
 
-export default function SidebarNav() {
+interface SidebarNavProps {
+    sidebarCounts: Record<string, number>;
+    isFeeDefaulter: boolean;
+    lockoutMessage: string;
+}
+
+export default function SidebarNav({ sidebarCounts, isFeeDefaulter, lockoutMessage }: SidebarNavProps) {
   const pathname = usePathname();
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null); 
   const [isMounted, setIsMounted] = useState(false); 
-  const [sidebarCounts, setSidebarCounts] = useState<Record<string, number>>({});
-  const [isFeeDefaulter, setIsFeeDefaulter] = useState(false);
-  const [lockoutMessage, setLockoutMessage] = useState('');
-
 
   useEffect(() => {
     setIsMounted(true); 
@@ -170,30 +170,6 @@ export default function SidebarNav() {
       setCurrentUserRole(null); 
     }
   }, []);
-
-  useEffect(() => {
-    async function fetchCountsAndStatus() {
-        const userId = localStorage.getItem('currentUserId');
-        const role = localStorage.getItem('currentUserRole') as UserRole | null;
-        if (userId && role) {
-            const result = await getDashboardDataAction(userId, role);
-            if (result.ok && result.data) {
-                setSidebarCounts(result.data.sidebarCounts || {});
-                 if(role === 'student' && result.data.feeStatus) {
-                    setIsFeeDefaulter(result.data.feeStatus.isDefaulter);
-                    setLockoutMessage(result.data.feeStatus.message);
-                }
-            }
-        } else {
-            setIsFeeDefaulter(false);
-            setLockoutMessage('');
-        }
-    }
-    fetchCountsAndStatus();
-    const interval = setInterval(fetchCountsAndStatus, 60000); // Refresh counts every minute
-    return () => clearInterval(interval);
-  }, [currentUserRole]);
-
 
   if (!isMounted) {
     return (

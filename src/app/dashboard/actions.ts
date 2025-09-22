@@ -4,7 +4,7 @@
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import type { UserRole, AnnouncementDB, CalendarEventDB, Student, Teacher, SchoolEntry as School, ClassData, Assignment, LeaveRequestStatus, Expense } from '@/types';
 import { subDays, startOfDay, endOfDay, addDays, formatISO } from 'date-fns';
-import { getAnnouncementsAction } from '../communication/actions';
+import { getAnnouncementsAction } from '@/app/communication/actions';
 
 
 interface DashboardData {

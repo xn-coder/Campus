@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppLayout from '@/components/layout/app-layout';
+import SidebarWrapper from '@/components/layout/sidebar-wrapper';
 
 export const metadata: Metadata = {
   title: 'CampusHub',
@@ -31,7 +32,10 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <SidebarProvider defaultOpen>
-            <AppLayout>{children}</AppLayout>
+            <AppLayout>
+                <SidebarWrapper />
+                {children}
+            </AppLayout>
           </SidebarProvider>
           <Toaster />
         </ThemeProvider>
