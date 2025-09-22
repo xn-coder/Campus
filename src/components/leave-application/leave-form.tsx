@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback } from 'react';
@@ -8,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, XCircle, Loader2, UploadCloud } from 'lucide-react';
 import type { User, Student, UserRole, SchoolEntry, StoredLeaveApplicationDB, Teacher, Accountant } from '@/types';
@@ -30,15 +31,9 @@ const formSchema = z.object({
 
 type LeaveFormValues = z.infer<typeof formSchema>;
 
-interface LeaveFormProps {
-    onApplicationSubmitted?: () => void;
-}
-
-
-export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
+export default function LeaveForm() {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [submissionResult, setSubmissionResult] = useState<StoredLeaveApplicationDB | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   
@@ -89,7 +84,6 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
 
   const onSubmit = async (data: LeaveFormValues) => {
     setIsLoading(true);
-    setSubmissionResult(null);
     setError(null);
 
     if (!currentUserId || !currentUserRole || !currentSchoolId) {
@@ -124,13 +118,12 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
       });
 
       if (result.ok && result.application) {
-        setSubmissionResult(result.application);
         toast({ title: "Application Submitted", description: result.message});
         
         const resetValues = { reason: '', startDate: '', endDate: '', medicalNotes: undefined, applicantName: data.applicantName };
         reset(resetValues);
         setFileName(null);
-        onApplicationSubmitted?.();
+        // Let the parent page handle what happens next (like re-fetching)
       } else {
         setError(result.message || "Failed to save application to database.");
         toast({ title: "Submission Error", description: result.message || "Failed to save application.", variant: "destructive"});
@@ -154,126 +147,69 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
     }
   };
 
-  const formInDialog = !!onApplicationSubmitted;
-
   return (
-    <>
-    {formInDialog ? (
-      <>
-        <DialogHeader>
-            <DialogTitle>New Leave Application</DialogTitle>
-            <DialogDescription>Fill in the details for your leave request. It will be sent to the administration for review.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-4">
-            <div>
-                <Label htmlFor="applicantName">Applicant Name</Label>
-                <Controller name="applicantName" control={control} render={({ field }) => <Input id="applicantName" {...field} disabled />} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Controller name="startDate" control={control} render={({ field }) => <Input id="startDate" type="date" {...field} />} />
-                    {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Controller name="endDate" control={control} render={({ field }) => <Input id="endDate" type="date" {...field} />} />
-                    {errors.endDate && <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>}
-                </div>
-            </div>
-            <div>
-                <Label htmlFor="reason">Reason for Absence</Label>
-                <Controller name="reason" control={control} render={({ field }) => <Textarea id="reason" placeholder="Explain the reason..." {...field} />} />
-                {errors.reason && <p className="text-sm text-destructive mt-1">{errors.reason.message}</p>}
-            </div>
-            <div>
-                <Label htmlFor="medicalNotes-upload-dialog">Upload Document (Optional)</Label>
-                <Input id="medicalNotes-upload-dialog" type="file" className="w-full" accept=".pdf,.jpg,.jpeg,.png" {...register("medicalNotes", { onChange: handleFileChange })} />
-            </div>
-            {error && <Alert variant="destructive"><XCircle className="h-4 w-4" /><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
-            <DialogFooter>
-                <DialogClose asChild><Button type="button" variant="outline" disabled={isLoading}>Cancel</Button></DialogClose>
-                <Button type="submit" disabled={isLoading || !currentSchoolId}>
-                    {isLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</> : 'Submit Application'}
-                </Button>
-            </DialogFooter>
-        </form>
-      </>
-    ) : (
-      <Card>
-        <CardHeader>
-          <CardTitle>Submit Leave Application</CardTitle>
-          <CardDescription>Fill in the details for your leave request. Your application will be reviewed by the administration.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div>
-              <Label htmlFor="applicantName">Applicant Name</Label>
-              <Controller
-                name="applicantName"
-                control={control}
-                render={({ field }) => <Input id="applicantName" placeholder="Enter your full name" {...field} disabled />}
-              />
-              {errors.applicantName && <p className="text-sm text-destructive mt-1">{errors.applicantName.message}</p>}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="startDate">Start Date</Label>
-                    <Controller name="startDate" control={control} render={({ field }) => <Input id="startDate" type="date" {...field} />} />
-                    {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="endDate">End Date</Label>
-                    <Controller name="endDate" control={control} render={({ field }) => <Input id="endDate" type="date" {...field} />} />
-                    {errors.endDate && <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>}
-                </div>
-            </div>
-
-            <div>
-              <Label htmlFor="reason">Reason for Absence</Label>
-              <Controller
-                name="reason"
-                control={control}
-                render={({ field }) => <Textarea id="reason" placeholder="Explain the reason for absence..." {...field} />}
-              />
-              {errors.reason && <p className="text-sm text-destructive mt-1">{errors.reason.message}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="medicalNotes">Upload Document (Optional)</Label>
-              <div className="flex items-center space-x-2">
-                <Label 
-                  htmlFor="medicalNotes-upload" 
-                  className="flex items-center justify-center w-full px-4 py-2 border border-dashed rounded-md cursor-pointer hover:border-primary"
-                >
-                  <UploadCloud className="w-5 h-5 mr-2 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {fileName || "Click to upload a file (PDF, JPG, PNG)"}
-                  </span>
-                </Label>
-                <Input 
-                  id="medicalNotes-upload" 
-                  type="file"
-                  className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  {...register("medicalNotes", { onChange: handleFileChange })}
-                />
+    <Card>
+      <CardHeader>
+        <CardTitle>Submit Application</CardTitle>
+        <CardDescription>Fill in the details for your leave request.</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <CardContent className="space-y-6">
+          <div>
+            <Label htmlFor="applicantName">Applicant Name</Label>
+            <Controller
+              name="applicantName"
+              control={control}
+              render={({ field }) => <Input id="applicantName" placeholder="Enter your full name" {...field} disabled />}
+            />
+            {errors.applicantName && <p className="text-sm text-destructive mt-1">{errors.applicantName.message}</p>}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                  <Label htmlFor="startDate">Start Date</Label>
+                  <Controller name="startDate" control={control} render={({ field }) => <Input id="startDate" type="date" {...field} />} />
+                  {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>}
               </div>
-              {errors.medicalNotes && <p className="text-sm text-destructive mt-1">{errors.medicalNotes.message?.toString()}</p>}
-            </div>
+              <div>
+                  <Label htmlFor="endDate">End Date</Label>
+                  <Controller name="endDate" control={control} render={({ field }) => <Input id="endDate" type="date" {...field} />} />
+                  {errors.endDate && <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>}
+              </div>
+          </div>
 
-            <Button type="submit" disabled={isLoading || !currentSchoolId} className="w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                'Submit Application'
-              )}
-            </Button>
-          </form>
+          <div>
+            <Label htmlFor="reason">Reason for Absence</Label>
+            <Controller
+              name="reason"
+              control={control}
+              render={({ field }) => <Textarea id="reason" placeholder="Explain the reason for absence..." {...field} />}
+            />
+            {errors.reason && <p className="text-sm text-destructive mt-1">{errors.reason.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="medicalNotes">Upload Document (Optional)</Label>
+            <div className="flex items-center space-x-2">
+              <Label 
+                htmlFor="medicalNotes-upload" 
+                className="flex items-center justify-center w-full px-4 py-2 border border-dashed rounded-md cursor-pointer hover:border-primary"
+              >
+                <UploadCloud className="w-5 h-5 mr-2 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {fileName || "Click to upload a file (PDF, JPG, PNG)"}
+                </span>
+              </Label>
+              <Input 
+                id="medicalNotes-upload" 
+                type="file"
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png"
+                {...register("medicalNotes", { onChange: handleFileChange })}
+              />
+            </div>
+            {errors.medicalNotes && <p className="text-sm text-destructive mt-1">{errors.medicalNotes.message?.toString()}</p>}
+          </div>
 
           {error && (
             <Alert variant="destructive" className="mt-6">
@@ -283,8 +219,19 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
             </Alert>
           )}
         </CardContent>
-      </Card>
-    )}
-    </>
+        <CardFooter>
+            <Button type="submit" disabled={isLoading || !currentSchoolId} className="w-full">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              'Submit Application'
+            )}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
