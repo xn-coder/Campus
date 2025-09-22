@@ -32,8 +32,6 @@ interface SubmitLeaveApplicationInput {
   medical_notes_data_uri?: string;
   applicant_user_id: string;
   applicant_role: UserRole | 'guest';
-  applicant_name: string;
-  school_id: string;
 }
 
 export async function submitLeaveApplicationAction(
@@ -41,6 +39,12 @@ export async function submitLeaveApplicationAction(
 ): Promise<{ ok: boolean; message: string; application?: StoredLeaveApplicationDB }> {
   const supabase = createSupabaseServerClient();
   try {
+    const { data: user, error: userError } = await supabase.from('users').select('school_id, name').eq('id', input.applicant_user_id).single();
+    if(userError || !user || !user.school_id) {
+        return { ok: false, message: "Could not find user's school context. Application cannot be submitted." };
+    }
+    const schoolId = user.school_id;
+
     const { data, error } = await supabase
       .from('leave_applications')
       .insert({
@@ -52,7 +56,7 @@ export async function submitLeaveApplicationAction(
         status: 'Pending',
         applicant_user_id: input.applicant_user_id,
         applicant_role: input.applicant_role,
-        school_id: input.school_id,
+        school_id: schoolId,
       })
       .select()
       .single();
@@ -118,7 +122,7 @@ export async function getLeaveRequestsAction(params: GetLeaveRequestsParams): Pr
         .from('students')
         .select('user_id')
         .in('class_id', teacherClassIds)
-        .eq('school_id', school_id);
+        .eq('school_id', schoolId);
       
       if (studentsError) throw studentsError;
       const studentUserIds = (studentsInClasses || []).map(s => s.user_id);

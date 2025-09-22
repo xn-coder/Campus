@@ -13,29 +13,35 @@ import { getLeaveRequestsAction } from './actions';
 import { format, parseISO } from 'date-fns';
 import { History, Loader2, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { Dialog } from '@/components/ui/dialog';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function LeaveApplicationPage() {
   const { toast } = useToast();
   const [leaveHistory, setLeaveHistory] = useState<StoredLeaveApplicationDB[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFormOpen, setIsFormOpen] = useState(false); // For dialog control
 
   const fetchHistory = useCallback(async () => {
     setIsLoading(true);
     const currentUserId = localStorage.getItem('currentUserId');
-    const currentUserRole = localStorage.getItem('currentUserRole') as UserRole | null;
-    const currentSchoolId = localStorage.getItem('currentSchoolId');
-
-    if (!currentUserId || !currentUserRole || !currentSchoolId) {
+    
+    if (!currentUserId) {
       toast({ title: "Error", description: "User context is missing. Please log in again.", variant: "destructive" });
       setIsLoading(false);
       return;
     }
+    
+    // Fetch user's school from the DB to ensure it's accurate
+    const { data: user, error: userError } = await supabase.from('users').select('school_id').eq('id', currentUserId).single();
+    if (userError || !user?.school_id) {
+        toast({ title: "Error", description: "Could not find your school information.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+    }
+    const currentSchoolId = user.school_id;
 
     const result = await getLeaveRequestsAction({
       school_id: currentSchoolId,
       applicant_user_id: currentUserId,
-      // No target_role needed as it fetches based on applicant_user_id now
     });
 
     if (result.ok) {
@@ -49,11 +55,6 @@ export default function LeaveApplicationPage() {
   useEffect(() => {
     fetchHistory();
   }, [fetchHistory]);
-  
-  const handleDialogClose = () => {
-    setIsFormOpen(false);
-    fetchHistory(); // Re-fetch history after submission
-  };
 
   const formatDateSafe = (dateString?: string | null) => {
     if (!dateString) return 'N/A';
@@ -72,7 +73,7 @@ export default function LeaveApplicationPage() {
         description="Submit your leave request and view the history of your past applications."
       />
       <div className="space-y-6">
-        <LeaveForm />
+        <LeaveForm onApplicationSubmit={fetchHistory} />
         
         <Card>
             <CardHeader>

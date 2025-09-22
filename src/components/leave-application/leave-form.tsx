@@ -12,14 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { CheckCircle, XCircle, Loader2, UploadCloud } from 'lucide-react';
-import type { User, Student, UserRole, SchoolEntry, StoredLeaveApplicationDB, Teacher, Accountant } from '@/types';
-import { submitLeaveApplicationAction, getUserProfileForLeaveAction } from '@/app/(app)/leave-application/actions';
+import type { UserRole } from '@/types';
+import { submitLeaveApplicationAction } from '@/app/(app)/leave-application/actions';
 import { useToast } from '@/hooks/use-toast';
 import { fileToDataUri } from '@/lib/utils';
-import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 const formSchema = z.object({
-  applicantName: z.string().min(1, "Applicant name is required"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
   reason: z.string().min(10, "Reason must be at least 10 characters long"),
@@ -31,7 +29,11 @@ const formSchema = z.object({
 
 type LeaveFormValues = z.infer<typeof formSchema>;
 
-export default function LeaveForm() {
+interface LeaveFormProps {
+  onApplicationSubmit: () => void;
+}
+
+export default function LeaveForm({ onApplicationSubmit }: LeaveFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,45 +41,35 @@ export default function LeaveForm() {
   
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
+  const [applicantName, setApplicantName] = useState<string>('');
 
 
-  const { control, handleSubmit, register, formState: { errors }, reset, setValue } = useForm<LeaveFormValues>({
+  const { control, handleSubmit, register, formState: { errors }, reset } = useForm<LeaveFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      applicantName: '',
       startDate: '',
       endDate: '',
       reason: '',
     }
   });
   
-  const loadUserContext = useCallback(async () => {
+  useEffect(() => {
     const role = localStorage.getItem('currentUserRole') as UserRole | null;
     const userId = localStorage.getItem('currentUserId');
     const userName = localStorage.getItem('currentUserName');
 
     setCurrentUserRole(role);
     setCurrentUserId(userId);
-    setValue('applicantName', userName || '');
-
-    if (userId && role) {
-        const { schoolId } = await getUserProfileForLeaveAction(userId, role);
-        setCurrentSchoolId(schoolId);
-    }
-  }, [setValue, toast]);
-
-  useEffect(() => {
-    loadUserContext();
-  }, [loadUserContext]);
+    setApplicantName(userName || '');
+  }, []);
 
 
   const onSubmit = async (data: LeaveFormValues) => {
     setIsLoading(true);
     setError(null);
 
-    if (!currentUserId || !currentUserRole || !currentSchoolId) {
-      setError("User context or school ID is missing. Cannot submit application.");
+    if (!currentUserId || !currentUserRole) {
+      setError("User context is missing. Cannot submit application.");
       setIsLoading(false);
       return;
     }
@@ -96,23 +88,19 @@ export default function LeaveForm() {
       }
 
       const result = await submitLeaveApplicationAction({
-        applicant_name: data.applicantName,
         reason: data.reason,
         start_date: data.startDate,
         end_date: data.endDate,
         medical_notes_data_uri: medicalNotesDataUri,
         applicant_user_id: currentUserId,
         applicant_role: currentUserRole,
-        school_id: currentSchoolId,
       });
 
       if (result.ok && result.application) {
         toast({ title: "Application Submitted", description: result.message});
-        
-        const resetValues = { reason: '', startDate: '', endDate: '', medicalNotes: undefined, applicantName: data.applicantName };
-        reset(resetValues);
+        reset({ reason: '', startDate: '', endDate: '', medicalNotes: undefined });
         setFileName(null);
-        // Let the parent page handle what happens next (like re-fetching)
+        onApplicationSubmit();
       } else {
         setError(result.message || "Failed to save application to database.");
         toast({ title: "Submission Error", description: result.message || "Failed to save application.", variant: "destructive"});
@@ -146,12 +134,7 @@ export default function LeaveForm() {
         <CardContent className="space-y-6">
           <div>
             <Label htmlFor="applicantName">Applicant Name</Label>
-            <Controller
-              name="applicantName"
-              control={control}
-              render={({ field }) => <Input id="applicantName" placeholder="Enter your full name" {...field} disabled />}
-            />
-            {errors.applicantName && <p className="text-sm text-destructive mt-1">{errors.applicantName.message}</p>}
+            <Input id="applicantName" placeholder="Your name" value={applicantName} disabled />
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,7 +192,7 @@ export default function LeaveForm() {
           )}
         </CardContent>
         <CardFooter>
-            <Button type="submit" disabled={isLoading || !currentSchoolId} className="w-full">
+            <Button type="submit" disabled={isLoading || !currentUserId} className="w-full">
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
