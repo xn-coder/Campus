@@ -9,29 +9,6 @@ import type { Teacher } from '@/types';
 
 const SALT_ROUNDS = 10;
 
-// New action to fetch all teachers for a school
-export async function getTeachersForSchoolAction(schoolId: string): Promise<{ ok: boolean; teachers?: Teacher[], message?: string }> {
-    if (!schoolId) {
-        return { ok: false, message: "School ID is required." };
-    }
-    const supabase = createSupabaseServerClient();
-    try {
-        const { data, error } = await supabase
-            .from('teachers')
-            .select('*')
-            .eq('school_id', schoolId)
-            .order('name');
-
-        if (error) {
-          return { ok: false, message: `Failed to fetch teachers: ${error.message}` };
-        }
-        return { ok: true, teachers: data || [] };
-    } catch (e: any) {
-        return { ok: false, message: e.message || 'An unexpected server error occurred.' };
-    }
-}
-
-
 // New action to fetch all data needed for the manage teachers page
 export async function getAdminTeacherManagementPageDataAction(adminUserId: string): Promise<{
   ok: boolean;
@@ -78,23 +55,6 @@ export async function getAdminTeacherManagementPageDataAction(adminUserId: strin
         console.error("Error in getAdminTeacherManagementPageDataAction:", e);
         return { ok: false, message: e.message || 'An unexpected server error occurred.' };
     }
-}
-
-
-interface CreateAccountantInput {
-  name: string;
-  email: string;
-  school_id: string;
-}
-
-interface UpdateTeacherInput {
-  id: string; 
-  userId?: string; 
-  name: string;
-  email: string;
-  subject: string;
-  profilePictureUrl?: string;
-  school_id: string;
 }
 
 export async function createTeacherAction(
@@ -250,7 +210,7 @@ export async function updateTeacherAction(
         const sanitizedFileName = profilePictureFile.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
         const filePath = `public/teacher-profiles/${school_id}/${uuidv4()}-${sanitizedFileName}`;
 
-        const { error: uploadError } = await supabaseAdmin.storage.from('campushub').upload(filePath, profilePictureFile);
+        const { error: uploadError } = await supabaseAdmin.storage.from('campushub').upload(filePath, profilePictureFile, { upsert: true });
         if (uploadError) throw uploadError;
 
         const { data: publicUrlData } = supabaseAdmin.storage.from('campushub').getPublicUrl(filePath);
@@ -258,7 +218,7 @@ export async function updateTeacherAction(
 
         if (currentTeacherData?.profile_picture_url && currentTeacherData.profile_picture_url.includes('supabase.co')) {
             const oldFilePath = new URL(currentTeacherData.profile_picture_url).pathname.split('/public/')[1];
-            await supabaseAdmin.storage.from('campushub').remove([oldFilePath]);
+            await supabaseAdmin.storage.from('campushub').remove([oldFilePath.replace('/public/','')]);
         }
     }
 
@@ -344,5 +304,3 @@ export async function deleteTeacherAction(
     return { ok: false, message: `An unexpected error occurred: ${error.message}` };
   }
 }
-
-    

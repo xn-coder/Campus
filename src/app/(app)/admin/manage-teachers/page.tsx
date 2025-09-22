@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { Teacher } from '@/types'; 
 import { useState, useEffect, type FormEvent, type ChangeEvent, useMemo, useCallback } from 'react';
@@ -23,22 +22,22 @@ export default function ManageTeachersPage() {
   const { toast } = useToast();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState("list-teachers");
   const [isLoading, setIsLoading] = useState(true); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentAdminUserId, setCurrentAdminUserId] = useState<string | null>(null);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Dialog states
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // For Create Teacher Tab
+  // Form states
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherProfilePicFile, setNewTeacherProfilePicFile] = useState<File | null>(null);
-
-  // For Edit Dialog
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [editTeacherName, setEditTeacherName] = useState('');
   const [editTeacherEmail, setEditTeacherEmail] = useState('');
@@ -93,6 +92,20 @@ export default function ManageTeachersPage() {
     setEditTeacherProfilePicFile(null);
     setIsEditDialogOpen(true);
   };
+  
+  const resetCreateForm = () => {
+    setNewTeacherName('');
+    setNewTeacherEmail('');
+    setNewTeacherSubject('');
+    setNewTeacherProfilePicFile(null);
+    const fileInput = document.getElementById('teacherProfilePicFile') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+  
+  const handleOpenCreateDialog = () => {
+      resetCreateForm();
+      setIsCreateDialogOpen(true);
+  }
 
   const handleEditTeacherSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -179,14 +192,8 @@ export default function ManageTeachersPage() {
 
     if (result.ok) {
       toast({ title: "Teacher Created", description: result.message });
-      setNewTeacherName('');
-      setNewTeacherEmail('');
-      setNewTeacherSubject('');
-      setNewTeacherProfilePicFile(null);
-      const fileInput = document.getElementById('teacherProfilePicFile') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-
-      setActiveTab("list-teachers"); 
+      setIsCreateDialogOpen(false);
+      resetCreateForm();
       if(currentAdminUserId) fetchPageData(currentAdminUserId);
     } else {
        toast({ title: "Error", description: result.message, variant: "destructive" });
@@ -239,115 +246,106 @@ export default function ManageTeachersPage() {
         title="Manage Teachers" 
         description="Administer teacher profiles, assignments, and records." 
         actions={
-          <Button onClick={() => setActiveTab("create-teacher")} disabled={isLoading || isSubmitting || !currentSchoolId}>
+          <Button onClick={handleOpenCreateDialog} disabled={isLoading || isSubmitting || !currentSchoolId}>
             <PlusCircle className="mr-2 h-4 w-4" /> Add New Teacher
           </Button>
         }
       />
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="list-teachers"><Briefcase className="mr-2 h-4 w-4" />List Teachers</TabsTrigger>
-          <TabsTrigger value="create-teacher"><UserPlus className="mr-2 h-4 w-4" />Create Teacher</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list-teachers">
-          <Card>
-            <CardHeader>
-              <CardTitle>Teacher Roster</CardTitle>
-              <CardDescription>View, search, and manage all teacher profiles.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <div className="flex-grow flex items-center gap-2">
-                    <Search className="h-5 w-5 text-muted-foreground" />
-                    <Input 
-                    placeholder="Search teachers by name, email, or subject..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="max-w-sm"
-                    disabled={isLoading || !currentSchoolId}
-                    />
-                </div>
-                <Button onClick={handleDownloadCsv} disabled={isLoading || filteredTeachers.length === 0}>
-                    <FileDown className="mr-2 h-4 w-4"/>
-                    Download Report
-                </Button>
-              </div>
-              {isLoading && <p className="text-center text-muted-foreground py-4">Loading teachers...</p>}
-              {!isLoading && currentSchoolId && paginatedTeachers.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">
-                  {searchTerm ? "No teachers match your search for this school." : "No teachers found for this school. Add a new teacher to get started."}
-                </p>
-              )}
-              {!isLoading && currentSchoolId && paginatedTeachers.length > 0 && (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Avatar</TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedTeachers.map((teacher) => (
-                      <TableRow key={teacher.id}>
-                        <TableCell>
-                          <Avatar>
-                            <AvatarImage src={teacher.profile_picture_url || `https://placehold.co/40x40.png?text=${teacher.name.substring(0,2).toUpperCase()}`} alt={teacher.name} data-ai-hint="person portrait" />
-                            <AvatarFallback>{teacher.name.substring(0,2).toUpperCase()}</AvatarFallback>
-                          </Avatar>
-                        </TableCell>
-                        <TableCell className="font-medium">{teacher.name}</TableCell>
-                        <TableCell>{teacher.email}</TableCell>
-                        <TableCell>{teacher.subject}</TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => handleOpenEditDialog(teacher)}>
-                                <Edit2 className="mr-2 h-4 w-4" /> Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => handleDeleteTeacher(teacher)} className="text-destructive">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-            {totalPages > 1 && (
-              <CardFooter className="flex justify-end items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1 || isLoading}>
-                    <ChevronLeft className="h-4 w-4" /> Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
-                <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages || isLoading}>
-                    Next <ChevronRight className="h-4 w-4" />
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="create-teacher">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Teacher</CardTitle>
-              <CardDescription>Fill in the form below to add a new teacher. This will create a login for them with default password "password".</CardDescription>
-            </CardHeader>
-            <form onSubmit={handleCreateTeacherSubmit}>
-              <CardContent className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>Teacher Roster</CardTitle>
+          <CardDescription>View, search, and manage all teacher profiles.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <div className="flex-grow flex items-center gap-2">
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <Input 
+                placeholder="Search teachers by name, email, or subject..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-sm"
+                disabled={isLoading || !currentSchoolId}
+                />
+            </div>
+            <Button onClick={handleDownloadCsv} disabled={isLoading || filteredTeachers.length === 0}>
+                <FileDown className="mr-2 h-4 w-4"/>
+                Download Report
+            </Button>
+          </div>
+          {isLoading && <p className="text-center text-muted-foreground py-4">Loading teachers...</p>}
+          {!isLoading && currentSchoolId && paginatedTeachers.length === 0 && (
+            <p className="text-center text-muted-foreground py-4">
+              {searchTerm ? "No teachers match your search for this school." : "No teachers found for this school. Add a new teacher to get started."}
+            </p>
+          )}
+          {!isLoading && currentSchoolId && paginatedTeachers.length > 0 && (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Avatar</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedTeachers.map((teacher) => (
+                  <TableRow key={teacher.id}>
+                    <TableCell>
+                      <Avatar>
+                        <AvatarImage src={teacher.profile_picture_url || `https://placehold.co/40x40.png?text=${teacher.name.substring(0,2).toUpperCase()}`} alt={teacher.name} data-ai-hint="person portrait" />
+                        <AvatarFallback>{teacher.name.substring(0,2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell className="font-medium">{teacher.name}</TableCell>
+                    <TableCell>{teacher.email}</TableCell>
+                    <TableCell>{teacher.subject}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleOpenEditDialog(teacher)}>
+                            <Edit2 className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleDeleteTeacher(teacher)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+        {totalPages > 1 && (
+          <CardFooter className="flex justify-end items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p - 1)} disabled={currentPage === 1 || isLoading}>
+                <ChevronLeft className="h-4 w-4" /> Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">Page {currentPage} of {totalPages}</span>
+            <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => p + 1)} disabled={currentPage === totalPages || isLoading}>
+                Next <ChevronRight className="h-4 w-4" />
+            </Button>
+          </CardFooter>
+        )}
+      </Card>
+      
+       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Create New Teacher</DialogTitle>
+             <DialogDescription>A login will be created with default password "password".</DialogDescription>
+          </DialogHeader>
+           <form onSubmit={handleCreateTeacherSubmit}>
+              <div className="grid gap-4 py-4">
                 <div>
                   <Label htmlFor="teacherName">Teacher Name</Label>
                   <Input id="teacherName" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} placeholder="Full Name" required disabled={isSubmitting || !currentSchoolId}/>
@@ -364,17 +362,17 @@ export default function ManageTeachersPage() {
                   <Label htmlFor="teacherProfilePicFile">Profile Picture (Optional, &lt;2MB)</Label>
                   <Input id="teacherProfilePicFile" type="file" onChange={(e) => handleFileChange(e, 'create')} accept="image/png, image/jpeg" disabled={isSubmitting || !currentSchoolId}/>
                 </div>
-              </CardContent>
-              <CardFooter>
+              </div>
+               <DialogFooter>
+                <DialogClose asChild><Button variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting || !currentSchoolId}>
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />} 
                   Save Teacher & Create Account
                 </Button>
-              </CardFooter>
+              </DialogFooter>
             </form>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[480px]">
