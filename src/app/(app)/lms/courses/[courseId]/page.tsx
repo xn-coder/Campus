@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
@@ -126,6 +125,24 @@ function ViewCoursePageContent() {
     }
   }, [courseId, fetchData]);
 
+  const handleStartCourse = () => {
+    const firstLesson = course?.resources.find(r => r.type === 'note');
+    if (firstLesson) {
+      try {
+        const lessonContents: LessonContentResource[] = JSON.parse(firstLesson.url_or_content || '[]');
+        if (lessonContents.length > 0) {
+          const firstResourceId = lessonContents[0].id;
+          router.push(`/lms/courses/${courseId}/${firstResourceId}`);
+        } else {
+          setOpenLessons([firstLesson.id]);
+          toast({title: "Empty Lesson", description: "This lesson doesn't have any content yet.", variant: "default" });
+        }
+      } catch (e) {
+        toast({title: "Error", description: "Could not read the first lesson's content.", variant: "destructive" });
+      }
+    }
+  };
+  
   const getResourceIcon = (type: string) => {
     const props = { className: "mr-3 h-5 w-5 text-primary shrink-0" };
     switch(type) {
@@ -143,13 +160,6 @@ function ViewCoursePageContent() {
     }
   };
 
-  const handleStartCourse = () => {
-    const firstLessonId = course?.resources.find(r => r.type === 'note')?.id;
-    if (firstLessonId) {
-      setOpenLessons([firstLessonId]);
-    }
-  };
-  
   if (isLoading) {
     return <div className="text-center py-10 flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin mr-2"/> Loading course content...</div>;
   }
