@@ -1,7 +1,10 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SidebarProvider } from '@/components/ui/sidebar';
+import AppLayout from '@/components/layout/app-layout';
 
 export const metadata: Metadata = {
   title: 'CampusHub',
@@ -27,9 +30,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="no-screenshot">
-            {children}
-          </div>
+          <SidebarProvider defaultOpen>
+            <AppLayout>{children}</AppLayout>
+          </SidebarProvider>
           <Toaster />
         </ThemeProvider>
       </body>

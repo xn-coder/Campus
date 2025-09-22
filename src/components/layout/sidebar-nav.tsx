@@ -55,8 +55,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton'; 
-import { getStudentPendingFeeCountAction, checkStudentFeeStatusAction } from '@/app/(app)/admin/student-fees/actions';
-import { getDashboardDataAction } from '@/app/(app)/dashboard/actions';
+import { getDashboardDataAction } from '@/app/dashboard/actions';
 import { supabase } from '@/lib/supabaseClient';
 
 
