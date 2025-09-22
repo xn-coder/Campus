@@ -4,7 +4,7 @@
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import type { UserRole, AnnouncementDB, CalendarEventDB, Student, Teacher, SchoolEntry as School, ClassData, Assignment, LeaveRequestStatus, Expense } from '@/types';
 import { subDays, startOfDay, endOfDay, addDays, formatISO } from 'date-fns';
-import { getAnnouncementsAction } from '../communication/actions';
+import { getAnnouncementsAction } from '@/app/(app)/communication/actions';
 
 
 interface DashboardData {
@@ -27,26 +27,87 @@ interface DashboardData {
   // Common
   recentAnnouncements?: Pick<AnnouncementDB, 'id' | 'title' | 'date' | 'author_name' | 'posted_by_role' | 'target_class'>[];
   upcomingEvents?: Pick<CalendarEventDB, 'id' | 'title' | 'date' | 'start_time' | 'is_all_day'>[];
-  // Counts for sidebar
-  sidebarCounts?: {
-      pendingLeaveRequests?: number;
-      pendingTCRequests?: number;
-      pendingAssignments?: number;
-      pendingFeePayments?: number;
-  }
+}
+
+// This is a new, separate action specifically for the client-side sidebar to fetch counts.
+export async function getSidebarCountsAction(userId: string, userRole: UserRole): Promise<{
+    ok: boolean;
+    sidebarCounts?: {
+        pendingLeaveRequests?: number;
+        pendingTCRequests?: number;
+        pendingAssignments?: number;
+        pendingFeePayments?: number;
+    },
+    isFeeDefaulter?: boolean;
+    lockoutMessage?: string;
+    message?: string;
+}> {
+    if (!userId || !userRole) {
+        return { ok: false, message: 'User context is missing.' };
+    }
+    const supabase = createSupabaseServerClient();
+    const sidebarCounts: Record<string, number> = {};
+    let isFeeDefaulter = false;
+    let lockoutMessage = 'Feature locked due to pending fees.';
+
+    try {
+        const { data: user, error: userError } = await supabase.from('users').select('school_id').eq('id', userId).single();
+        if (userError || !user) throw new Error("User not found.");
+        const schoolId = user.school_id;
+
+        switch (userRole) {
+            case 'admin':
+                if (schoolId) {
+                    const [leaveRes, tcRes] = await Promise.all([
+                        supabase.from('leave_applications').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
+                        supabase.from('tc_requests').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
+                    ]);
+                    sidebarCounts.pendingLeaveRequests = leaveRes.count || 0;
+                    sidebarCounts.pendingTCRequests = tcRes.count || 0;
+                }
+                break;
+            case 'student':
+                 const { data: student } = await supabase.from('students').select('id, school_id').eq('user_id', userId).single();
+                 if(student) {
+                    const { count: feeCount } = await supabase.from('student_fee_payments').select('id', {count: 'exact', head: true}).eq('student_id', student.id).eq('status', 'Pending');
+                    sidebarCounts.pendingFeePayments = feeCount || 0;
+                    isFeeDefaulter = (feeCount || 0) > 0;
+                 }
+                break;
+            // Add other roles as needed
+        }
+        return { ok: true, sidebarCounts, isFeeDefaulter, lockoutMessage };
+    } catch(e: any) {
+        return { ok: false, message: e.message };
+    }
 }
 
 
 export async function getDashboardDataAction(userId: string, userRole: UserRole): Promise<{ ok: boolean; data?: DashboardData; message?: string }> {
   const supabase = createSupabaseServerClient();
-  const dashboardData: DashboardData = { sidebarCounts: {} };
+  const dashboardData: DashboardData = { };
   
   // --- Common Data: Announcements & Events ---
   const { data: userRecord, error: userError } = await supabase.from('users').select('school_id').eq('id', userId).single();
   const schoolId = userRecord?.school_id;
 
   if (schoolId) {
-      const announcementsResult = await getAnnouncementsAction({ school_id: schoolId, user_role: userRole, user_id: userId, student_user_id: userRole === 'student' ? userId : undefined });
+      const { data: studentData } = await supabase.from('students').select('class_id').eq('user_id', userId).single();
+      const { data: teacherData } = await supabase.from('teachers').select('id').eq('user_id', userId).single();
+      let teacherClassIds: string[] = [];
+      if(teacherData) {
+        const {data: classIds} = await supabase.from('classes').select('id').eq('teacher_id', teacherData.id);
+        if(classIds) teacherClassIds = classIds.map(c => c.id);
+      }
+
+      const announcementsResult = await getAnnouncementsAction({ 
+        school_id: schoolId, 
+        user_role: userRole, 
+        user_id: userId,
+        student_user_id: userRole === 'student' ? userId : undefined,
+        teacher_class_ids: teacherClassIds
+      });
+
       if (announcementsResult.ok) {
           dashboardData.recentAnnouncements = announcementsResult.announcements?.slice(0, 5);
       }
@@ -67,13 +128,15 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
   // --- Role-Specific Data ---
   switch(userRole) {
       case 'student': {
-          const { data: student } = await supabase.from('students').select('id, school_id').eq('user_id', userId).single();
+          const { data: student } = await supabase.from('students').select('id, class_id, school_id').eq('user_id', userId).single();
           if (student) {
               const { count: assignmentCount } = await supabase.from('assignments').select('id', { count: 'exact', head: true }).eq('school_id', student.school_id).eq('class_id', student.class_id);
               dashboardData.upcomingAssignmentsCount = assignmentCount || 0;
 
               const { count: pendingFees } = await supabase.from('student_fee_payments').select('id', { count: 'exact', head: true }).eq('student_id', student.id).eq('status', 'Pending');
-              dashboardData.sidebarCounts!.pendingFeePayments = pendingFees || 0;
+              if ((pendingFees || 0) > 0) {
+                dashboardData.feeStatus = { isDefaulter: true, message: `You have ${pendingFees} overdue fee payment(s).` };
+              }
           }
           break;
       }
@@ -94,14 +157,12 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
       }
       case 'admin':
           if (schoolId) {
-              const [studentsRes, teachersRes, classesRes, feesRes, expensesRes, leaveRes, tcRes] = await Promise.all([
+              const [studentsRes, teachersRes, classesRes, feesRes, expensesRes] = await Promise.all([
                   supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Active'),
                   supabase.from('teachers').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
                   supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
                   supabase.from('student_fee_payments').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
-                  supabase.from('expenses').select('amount').eq('school_id', schoolId),
-                  supabase.from('leave_applications').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
-                  supabase.from('tc_requests').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
+                  supabase.from('expenses').select('amount').eq('school_id', schoolId)
               ]);
               
               dashboardData.totalSchoolStudents = studentsRes.count || 0;
@@ -109,8 +170,6 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
               dashboardData.totalSchoolClasses = classesRes.count || 0;
               dashboardData.pendingFeesCount = feesRes.count || 0;
               dashboardData.totalExpenses = (expensesRes.data || []).reduce((sum, item) => sum + item.amount, 0);
-              dashboardData.sidebarCounts!.pendingLeaveRequests = leaveRes.count || 0;
-              dashboardData.sidebarCounts!.pendingTCRequests = tcRes.count || 0;
           }
           break;
       case 'superadmin': {

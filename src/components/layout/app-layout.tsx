@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from 'react';
-import { SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import Image from 'next/image';
 
 interface AppLayoutProps {
@@ -10,19 +10,20 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  // The sidebar is now rendered by the server layout, not here.
-  // This component just provides the main content area.
   const [pageContent] = React.Children.toArray(children);
 
   return (
-    <SidebarInset className="flex-1 bg-background">
-      <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4 md:hidden">
-         <SidebarTrigger />
-         <Image src="/logo.png" alt="App Logo" width={120} height={32} priority />
-      </header>
-      <main className="flex-1 overflow-auto p-4 md:p-6">
-        {pageContent}
-      </main>
-    </SidebarInset>
+    <>
+      <Sidebar />
+      <SidebarInset className="flex-1 bg-background">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 py-4 md:hidden">
+           <SidebarTrigger />
+           <Image src="/logo.png" alt="App Logo" width={120} height={32} priority />
+        </header>
+        <main className="flex-1 overflow-auto p-4 md:p-6">
+          {pageContent}
+        </main>
+      </SidebarInset>
+    </>
   );
 }

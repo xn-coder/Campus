@@ -83,6 +83,9 @@ type SidebarContext = {
   setOpenMobile: (open: boolean) => void
   isMobile: boolean
   toggleSidebar: () => void
+  sidebarCounts: Record<string, number>;
+  isFeeDefaulter: boolean;
+  lockoutMessage: string;
 }
 
 const SidebarContext = React.createContext<SidebarContext | null>(null)
@@ -102,6 +105,9 @@ const SidebarProvider = React.forwardRef<
     defaultOpen?: boolean
     open?: boolean
     onOpenChange?: (open: boolean) => void
+    sidebarCounts: Record<string, number>;
+    isFeeDefaulter: boolean;
+    lockoutMessage: string;
   }
 >(
   (
@@ -112,6 +118,9 @@ const SidebarProvider = React.forwardRef<
       className,
       style,
       children,
+      sidebarCounts,
+      isFeeDefaulter,
+      lockoutMessage,
       ...props
     },
     ref
@@ -174,8 +183,11 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        sidebarCounts,
+        isFeeDefaulter,
+        lockoutMessage,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, sidebarCounts, isFeeDefaulter, lockoutMessage]
     )
 
     return (
@@ -211,9 +223,6 @@ const Sidebar = React.forwardRef<
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
     collapsible?: "offcanvas" | "icon" | "none"
-    sidebarCounts: Record<string, number>;
-    isFeeDefaulter: boolean;
-    lockoutMessage: string;
   }
 >(
   (
@@ -223,14 +232,11 @@ const Sidebar = React.forwardRef<
       collapsible = "icon",
       className,
       children,
-      sidebarCounts,
-      isFeeDefaulter,
-      lockoutMessage,
       ...props
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const { isMobile, state, openMobile, setOpenMobile, sidebarCounts, isFeeDefaulter, lockoutMessage } = useSidebar();
     const router = useRouter();
     const { toast } = useToast();
 
