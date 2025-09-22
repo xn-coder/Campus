@@ -1,15 +1,13 @@
+
 "use client";
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Sidebar, SidebarInset, SidebarTrigger, SidebarHeader, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
-import SidebarNav from './sidebar-nav';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { Sidebar, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 import { useToast } from "@/hooks/use-toast";
-import { ThemeToggleButton } from '@/components/theme-toggle-button';
+import SidebarWrapper from '@/components/layout/sidebar-wrapper';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -24,6 +22,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       localStorage.removeItem('currentUserRole');
       localStorage.removeItem('currentUserId');
       localStorage.removeItem('currentUserName');
+      localStorage.removeItem('currentSchoolId');
     }
     toast({
       title: "Logout Successful",
@@ -32,9 +31,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
     router.push('/login');
   };
 
-  // The first child is the SidebarWrapper, the second is the page content
-  const sidebar = React.Children.toArray(children)[0];
-  const pageContent = React.Children.toArray(children)[1];
+  const [sidebar, ...pageContent] = React.Children.toArray(children);
 
   return (
     <div className="flex min-h-screen w-full">

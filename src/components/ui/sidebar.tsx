@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -60,7 +61,12 @@ import {
 
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import Image from "next/image"
+import { useToast } from "@/hooks/use-toast"
+import { LogOut } from 'lucide-react';
+import { ThemeToggleButton } from '@/components/theme-toggle-button';
+
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -205,35 +211,72 @@ const Sidebar = React.forwardRef<
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
     collapsible?: "offcanvas" | "icon" | "none"
+    sidebarCounts: Record<string, number>;
+    isFeeDefaulter: boolean;
+    lockoutMessage: string;
   }
 >(
   (
     {
       side = "left",
       variant = "sidebar",
-      collapsible = "offcanvas",
+      collapsible = "icon",
       className,
       children,
+      sidebarCounts,
+      isFeeDefaulter,
+      lockoutMessage,
       ...props
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+    const router = useRouter();
+    const { toast } = useToast();
 
-    if (collapsible === "none") {
-      return (
-        <div
-          className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
-            className
-          )}
-          ref={ref}
-          {...props}
-        >
-          {children}
-        </div>
-      )
-    }
+    const handleLogout = () => {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentUserRole');
+        localStorage.removeItem('currentUserId');
+        localStorage.removeItem('currentUserName');
+        localStorage.removeItem('currentSchoolId');
+      }
+      toast({
+        title: "Logout Successful",
+        description: "You have been logged out.",
+      });
+      router.push('/login');
+    };
+
+    const sidebarContent = (
+      <>
+        <SidebarHeader className="p-4 flex items-center justify-between">
+          <Link href="/dashboard" className="group-data-[collapsible=icon]:hidden">
+            <Image src="/logo.png" alt="App Logo" width={148} height={40} priority />
+          </Link>
+          <Link href="/dashboard" className="hidden group-data-[collapsible=icon]:block">
+             <Image src="/logo.png" alt="App Logo" width={32} height={32} className="rounded-sm" priority />
+          </Link>
+          <SidebarTrigger className="group-data-[collapsible=icon]:hidden md:hidden" />
+        </SidebarHeader>
+        <SidebarContent className="flex-1">
+          <SidebarNav 
+             sidebarCounts={sidebarCounts}
+             isFeeDefaulter={isFeeDefaulter}
+             lockoutMessage={lockoutMessage}
+          />
+        </SidebarContent>
+        <SidebarFooter className="p-2 border-t border-sidebar-border">
+          <div className="flex flex-col gap-1 group-data-[collapsible=icon]:items-center">
+            <ThemeToggleButton />
+            <Button variant="ghost" className="w-full justify-start group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:p-0" onClick={handleLogout}>
+                <LogOut className="mr-2 group-data-[collapsible=icon]:mr-0" />
+                <span className="group-data-[collapsible=icon]:hidden">Logout</span>
+            </Button>
+          </div>
+        </SidebarFooter>
+      </>
+    );
 
     if (isMobile) {
       return (
@@ -250,7 +293,7 @@ const Sidebar = React.forwardRef<
             side={side}
           >
             <SheetTitle className="sr-only">Main Navigation</SheetTitle>
-            <div className="flex h-full w-full flex-col">{children}</div>
+            <div className="flex h-full w-full flex-col">{sidebarContent}</div>
           </SheetContent>
         </Sheet>
       )
@@ -294,7 +337,7 @@ const Sidebar = React.forwardRef<
             data-sidebar="sidebar"
             className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
           >
-            {children}
+            {sidebarContent}
           </div>
         </div>
       </div>
@@ -791,9 +834,9 @@ const superAdminNavItems: NavItem[] = [
 const adminNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/school-details', label: 'School Details', icon: School },
-  { href: '/admin/manage-students', label: 'Manage Students', icon: Users },
-  { href: '/admin/manage-teachers', label: 'Manage Teachers', icon: Briefcase }, 
-  { href: '/admin/manage-accountants', label: 'Manage Accountants', icon: Wallet },
+  { href: '/manage-students', label: 'Manage Students', icon: Users },
+  { href: '/manage-teachers', label: 'Manage Teachers', icon: Briefcase }, 
+  { href: '/manage-accountants', label: 'Manage Accountants', icon: Wallet },
   { href: '/class-management', label: 'Class Management', icon: Presentation },
   { href: '/admin/lms/courses', label: 'LMS Courses', icon: Library }, 
   { href: '/admin/lms/reports', label: 'LMS Reports', icon: BarChart3 },

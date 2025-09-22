@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description: 'School Management System',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -33,8 +33,8 @@ export default function RootLayout({
         >
           <SidebarProvider defaultOpen>
             <AppLayout>
-                <SidebarWrapper />
-                {children}
+              <SidebarWrapper />
+              {children}
             </AppLayout>
           </SidebarProvider>
           <Toaster />
