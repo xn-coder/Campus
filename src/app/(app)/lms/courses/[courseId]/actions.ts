@@ -121,83 +121,112 @@ export async function checkUserEnrollmentForCourseViewAction(
   }
 }
 
-// New action to record completion
+// New action to record completion, now supports teachers
 export async function markResourceAsCompleteAction(
   userId: string,
+  userRole: UserRole,
   courseId: string,
   resourceId: string
 ): Promise<{ ok: boolean; message: string }> {
   const supabase = createSupabaseServerClient();
-  const { data: student, error: studentError } = await supabase
-    .from('students')
-    .select('id, school_id')
-    .eq('user_id', userId)
-    .single();
+  let userProfileId: string | null = null;
+  let schoolId: string | null = null;
 
-  if (studentError || !student) {
-    return { ok: false, message: "Could not find student profile to save progress." };
-  }
-  
-  const { error } = await supabase.from('lms_completion').upsert(
-    {
-      student_id: student.id,
-      course_id: courseId,
-      resource_id: resourceId,
-      school_id: student.school_id,
-      completed_at: new Date().toISOString(),
-    },
-    { onConflict: 'student_id,course_id,resource_id' }
-  );
-  
-  if (error) {
-    if (error.message.includes('relation "public.lms_completion" does not exist')) {
-      console.warn("LMS Completion table does not exist. Progress cannot be saved.");
-      // Return ok:true so the UI can still update visually, even if backend saving fails.
-      // This prevents a disruptive error for the user for a non-critical feature if DB is not updated.
-      return { ok: true, message: "Progress could not be saved to the database. The 'lms_completion' table is missing." };
-    }
-    console.error("Error saving resource completion:", error);
-    return { ok: false, message: `Failed to save progress: ${error.message}` };
-  }
+  try {
+      if (userRole === 'student') {
+        const { data: profile, error } = await supabase.from('students').select('id, school_id').eq('user_id', userId).single();
+        if (error || !profile) throw new Error("Could not find student profile to save progress.");
+        userProfileId = profile.id;
+        schoolId = profile.school_id;
+      } else if (userRole === 'teacher') {
+        const { data: profile, error } = await supabase.from('teachers').select('id, school_id').eq('user_id', userId).single();
+        if (error || !profile) throw new Error("Could not find teacher profile to save progress.");
+        userProfileId = profile.id;
+        schoolId = profile.school_id;
+      } else {
+        return { ok: true, message: "Progress not tracked for this user role." };
+      }
 
-  return { ok: true, message: "Progress saved." };
+      if (!userProfileId || !schoolId) {
+        return { ok: false, message: "Could not determine profile or school to save progress." };
+      }
+  
+      const { error } = await supabase.from('lms_completion').upsert(
+        {
+          user_profile_id: userProfileId,
+          user_role: userRole,
+          course_id: courseId,
+          resource_id: resourceId,
+          school_id: schoolId,
+          completed_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_profile_id,user_role,course_id,resource_id' }
+      );
+      
+      if (error) {
+        if (error.message.includes('relation "public.lms_completion" does not exist')) {
+          console.warn("LMS Completion table does not exist. Progress cannot be saved.");
+          return { ok: true, message: "Progress could not be saved to the database. The 'lms_completion' table is missing." };
+        }
+        throw error;
+      }
+
+      return { ok: true, message: "Progress saved." };
+
+  } catch (e: any) {
+      console.error("Error saving resource completion:", e);
+      return { ok: false, message: `Failed to save progress: ${e.message}` };
+  }
 }
 
-// New action to get completion status
+
+// New action to get completion status, now supports teachers
 export async function getCompletionStatusAction(
   userId: string,
+  userRole: UserRole,
   courseId: string
 ): Promise<{ ok: boolean; completedResources?: Record<string, boolean> }> {
   const supabase = createSupabaseServerClient();
-  const { data: student, error: studentError } = await supabase
-    .from('students')
-    .select('id')
-    .eq('user_id', userId)
-    .single();
+  let userProfileId: string | null = null;
+  
+  try {
+     if (userRole === 'student') {
+        const { data: profile, error } = await supabase.from('students').select('id').eq('user_id', userId).single();
+        if (error || !profile) throw new Error("Could not find student profile.");
+        userProfileId = profile.id;
+      } else if (userRole === 'teacher') {
+        const { data: profile, error } = await supabase.from('teachers').select('id').eq('user_id', userId).single();
+        if (error || !profile) throw new Error("Could not find teacher profile.");
+        userProfileId = profile.id;
+      } else {
+          return { ok: true, completedResources: {} }; // No progress for other roles
+      }
+  
+      if(!userProfileId) return { ok: false, completedResources: {} };
 
-  if (studentError || !student) {
-    return { ok: false, completedResources: {} };
+      const { data, error } = await supabase
+        .from('lms_completion')
+        .select('resource_id')
+        .eq('user_profile_id', userProfileId)
+        .eq('user_role', userRole)
+        .eq('course_id', courseId);
+      
+      if (error) {
+        if (error.message.includes('relation "public.lms_completion" does not exist')) {
+            console.warn("LMS Completion table does not exist. Cannot fetch completion status.");
+            return { ok: true, completedResources: {} }; // Return empty object gracefully
+        }
+        throw error;
+      }
+
+      const completedMap: Record<string, boolean> = {};
+      (data || []).forEach(item => {
+        completedMap[item.resource_id] = true;
+      });
+
+      return { ok: true, completedResources: completedMap };
+  } catch(e: any) {
+      console.error("Error fetching completion status:", e);
+      return { ok: false, completedResources: {} };
   }
-
-  const { data, error } = await supabase
-    .from('lms_completion')
-    .select('resource_id')
-    .eq('student_id', student.id)
-    .eq('course_id', courseId);
-    
-  if (error) {
-    if (error.message.includes('relation "public.lms_completion" does not exist')) {
-        console.warn("LMS Completion table does not exist. Cannot fetch completion status.");
-        return { ok: true, completedResources: {} }; // Return empty object gracefully
-    }
-    console.error("Error fetching completion status:", error);
-    return { ok: false, completedResources: {} };
-  }
-
-  const completedMap: Record<string, boolean> = {};
-  (data || []).forEach(item => {
-    completedMap[item.resource_id] = true;
-  });
-
-  return { ok: true, completedResources: completedMap };
 }

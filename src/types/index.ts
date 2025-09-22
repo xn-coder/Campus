@@ -666,12 +666,14 @@ export interface Accountant {
 
 export interface LmsCompletion {
   id: string;
-  student_id: string;
+  user_profile_id: string; // Changed from student_id
+  user_role: UserRole; // New field
   course_id: string;
   resource_id: string;
   school_id: string;
   completed_at: string;
 }
+
 
 // Represents a user's favorited course
 export interface UserFavoriteCourse {
