@@ -81,6 +81,12 @@ export async function getAdminTeacherManagementPageDataAction(adminUserId: strin
 }
 
 
+interface CreateAccountantInput {
+  name: string;
+  email: string;
+  school_id: string;
+}
+
 interface UpdateTeacherInput {
   id: string; 
   userId?: string; 

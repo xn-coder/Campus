@@ -14,7 +14,6 @@ import type { Teacher } from '@/types';
 import { useState, useEffect, type FormEvent, type ChangeEvent, useMemo, useCallback } from 'react';
 import { PlusCircle, Edit2, Trash2, Search, Briefcase, UserPlus, Save, Loader2, FileDown, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabaseClient';
 import { createTeacherAction, updateTeacherAction, deleteTeacherAction, getAdminTeacherManagementPageDataAction } from './actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
