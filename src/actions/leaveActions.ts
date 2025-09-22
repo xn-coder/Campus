@@ -27,13 +27,13 @@ export async function getUserProfileForLeaveAction(userId: string, role: UserRol
 
 interface SubmitLeaveApplicationInput {
   student_profile_id?: string;
-  student_name: string;
   reason: string;
   start_date: string;
   end_date: string;
   medical_notes_data_uri?: string;
   applicant_user_id: string;
   applicant_role: UserRole | 'guest';
+  applicant_name: string; // Keep this for display on the teacher/admin side for now
   school_id: string;
 }
 
@@ -46,7 +46,7 @@ export async function submitLeaveApplicationAction(
       .from('leave_applications')
       .insert({
         student_profile_id: input.student_profile_id,
-        student_name: input.student_name,
+        student_name: input.applicant_name, // Using applicant_name for this field now
         reason: input.reason,
         start_date: input.start_date,
         end_date: input.end_date,

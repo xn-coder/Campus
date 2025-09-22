@@ -106,7 +106,7 @@ export default function LeaveForm() {
       }
 
       const result = await submitLeaveApplicationAction({
-        student_name: data.applicantName, // This field serves as the applicant's name
+        applicant_name: data.applicantName,
         reason: data.reason,
         start_date: data.startDate,
         end_date: data.endDate,

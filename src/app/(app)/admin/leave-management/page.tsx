@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/supabaseClient';
 import { getLeaveRequestsAction, updateLeaveStatusAction } from '@/actions/leaveActions';
 import { format, parseISO } from 'date-fns';
-import { ClipboardCheck, Loader2, CheckCircle, XCircle, User, CalendarDays, MessageSquare, History, BarChart3, Clock } from 'lucide-react';
+import { ClipboardCheck, Loader2, CheckCircle, XCircle, User, CalendarDays, MessageSquare, History, BarChart3, Clock, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import {
@@ -109,7 +109,7 @@ export default function AdminLeaveManagementPage() {
         if (!summaryMap[req.applicant_user_id]) {
             summaryMap[req.applicant_user_id] = {
                 applicantId: req.applicant_user_id,
-                applicantName: req.student_name,
+                applicantName: (req.applicant as any)?.name || req.student_name,
                 role: req.applicant_role === 'teacher' ? 'Teacher' : 'Student',
                 totalAllotted: ASSUMED_ALLOTTED_LEAVES,
                 leavesTaken: 0,
@@ -148,7 +148,7 @@ export default function AdminLeaveManagementPage() {
       <TableBody>
         {filteredRequests.map((req) => (
           <TableRow key={req.id}>
-            <TableCell className="font-medium">{req.student_name}</TableCell>
+            <TableCell className="font-medium">{(req.applicant as any)?.name || req.student_name}</TableCell>
             <TableCell className="capitalize">{req.applicant_role}</TableCell>
             <TableCell>{format(parseISO(req.submission_date), 'PP')}</TableCell>
             <TableCell className="max-w-xs truncate">{req.reason}</TableCell>
