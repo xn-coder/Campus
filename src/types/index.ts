@@ -68,13 +68,14 @@ export interface StoredLeaveApplicationDB {
   student_profile_id?: string | null;
   student_name: string;
   reason: string;
+  start_date: string;
+  end_date: string;
   medical_notes_data_uri?: string | null;
   medical_notes_url?: string | null;
   medical_notes_file_name?: string | null;
   medical_notes_file_path?: string | null;
   submission_date: string; // ISO string
   status: LeaveRequestStatus;
-  ai_reasoning?: string | null;
   applicant_user_id: string;
   applicant_role: UserRole | 'guest';
   school_id: string;
