@@ -30,37 +30,18 @@ export async function getAdminSchoolIdAction(adminUserId: string): Promise<strin
   }
   const supabase = createSupabaseServerClient();
 
-  // First, try to get school_id directly from the user's record
-  const { data: userRec, error: userErr } = await supabase
+  const { data: user, error } = await supabase
     .from('users')
     .select('school_id')
     .eq('id', adminUserId)
     .single();
 
-  if (userErr && userErr.code !== 'PGRST116') { // Don't error if user just not found, but log other DB errors
-    console.error("Error fetching user record for school ID:", userErr.message);
-  }
-
-  // If school_id is found on the user record, return it. This is the preferred, direct method.
-  if (userRec?.school_id) {
-    return userRec.school_id;
-  }
-
-  // Fallback: If school_id is not on the user record, check if they are an admin_user_id in the schools table.
-  // This supports scenarios where the admin was created before the users.school_id column was reliably populated.
-  console.warn(`User ${adminUserId} has no school_id on their user record. Falling back to check schools.admin_user_id`);
-  const { data: school, error: schoolError } = await supabase
-    .from('schools')
-    .select('id')
-    .eq('admin_user_id', adminUserId)
-    .single();
-  
-  if (schoolError || !school) {
-    console.error("Error fetching admin's school via fallback or admin not linked:", schoolError?.message);
+  if (error || !user?.school_id) {
+    console.error("Error fetching admin's school ID or school ID is null:", error?.message);
     return null;
   }
   
-  return school.id;
+  return user.school_id;
 }
 
 
