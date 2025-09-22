@@ -873,7 +873,6 @@ const teacherNavItems: NavItem[] = [
   { href: '/teacher/grade-assignments', label: 'Grade Assignments', icon: BookOpenCheck },
   { href: '/teacher/assignment-history', label: 'Assignment History', icon: ScrollText },
   { href: '/leave-application', label: 'Apply for Leave', icon: ClipboardEdit },
-  { href: '/teacher/leave-history', label: 'My Leave History', icon: History },
   { href: '/teacher/leave-requests', label: 'Student Leaves', icon: ClipboardEdit }, 
   { href: '/teacher/id-card-printing', label: 'ID Card Printing', icon: Printer },
   { href: '/lms/available-courses', label: 'LMS Courses', icon: Library }, 
