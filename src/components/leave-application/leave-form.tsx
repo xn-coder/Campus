@@ -39,9 +39,6 @@ export default function LeaveForm() {
   
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
-  const [studentProfile, setStudentProfile] = useState<Student | null>(null);
-  const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null);
-  const [accountantProfile, setAccountantProfile] = useState<Accountant | null>(null);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
 
 
@@ -65,15 +62,8 @@ export default function LeaveForm() {
     setValue('applicantName', userName || '');
 
     if (userId && role) {
-        const { profile, schoolId } = await getUserProfileForLeaveAction(userId, role);
-        if (profile) {
-            setCurrentSchoolId(schoolId);
-            if(role === 'student') setStudentProfile(profile as Student);
-            if(role === 'teacher') setTeacherProfile(profile as Teacher);
-            if(role === 'accountant') setAccountantProfile(profile as Accountant);
-        } else {
-            toast({ title: "Error", description: `Could not load your ${role} profile.`, variant: "destructive" });
-        }
+        const { schoolId } = await getUserProfileForLeaveAction(userId, role);
+        setCurrentSchoolId(schoolId);
     }
   }, [setValue, toast]);
 
@@ -111,7 +101,6 @@ export default function LeaveForm() {
         start_date: data.startDate,
         end_date: data.endDate,
         medical_notes_data_uri: medicalNotesDataUri,
-        student_profile_id: studentProfile?.id,
         applicant_user_id: currentUserId,
         applicant_role: currentUserRole,
         school_id: currentSchoolId,

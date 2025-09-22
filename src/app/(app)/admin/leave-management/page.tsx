@@ -26,7 +26,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Cell, ResponsiveCo
 interface LeaveSummary {
     applicantId: string;
     applicantName: string;
-    role: 'Teacher' | 'Student';
+    role: 'Teacher' | 'Student' | 'Accountant';
     totalAllotted: number; // Assumed value for demonstration
     leavesTaken: number;
     balance: number;
@@ -40,23 +40,17 @@ export default function AdminLeaveManagementPage() {
 
   const fetchRequests = async (schoolId: string) => {
       setIsLoading(true);
-      const [teacherResult, studentResult] = await Promise.all([
+      const [teacherResult, studentResult, accountantResult] = await Promise.all([
         getLeaveRequestsAction({ school_id: schoolId, target_role: 'teacher' }),
-        getLeaveRequestsAction({ school_id: schoolId, target_role: 'student' })
+        getLeaveRequestsAction({ school_id: schoolId, target_role: 'student' }),
+        getLeaveRequestsAction({ school_id: schoolId, target_role: 'accountant' })
       ]);
       
       let allRequests: StoredLeaveApplicationDB[] = [];
-      if (teacherResult.ok && teacherResult.applications) {
-        allRequests = allRequests.concat(teacherResult.applications);
-      } else {
-        toast({ title: "Error", description: teacherResult.message || "Failed to load teacher leave requests.", variant: "destructive" });
-      }
-      
-      if (studentResult.ok && studentResult.applications) {
-        allRequests = allRequests.concat(studentResult.applications);
-      } else {
-        toast({ title: "Error", description: studentResult.message || "Failed to load student leave requests.", variant: "destructive" });
-      }
+      if (teacherResult.ok && teacherResult.applications) allRequests = allRequests.concat(teacherResult.applications);
+      if (studentResult.ok && studentResult.applications) allRequests = allRequests.concat(studentResult.applications);
+      if (accountantResult.ok && accountantResult.applications) allRequests = allRequests.concat(accountantResult.applications);
+
       setAllLeaveRequests(allRequests.sort((a, b) => new Date(b.submission_date).getTime() - new Date(a.submission_date).getTime()));
       setIsLoading(false);
   }
@@ -103,14 +97,15 @@ export default function AdminLeaveManagementPage() {
 
   const leaveSummaryData = useMemo(() => {
     const summaryMap: Record<string, LeaveSummary> = {};
-    const ASSUMED_ALLOTTED_LEAVES = 3;
+    const ASSUMED_ALLOTTED_LEAVES = 12;
 
     allLeaveRequests.forEach(req => {
+        if (!req.applicant) return;
         if (!summaryMap[req.applicant_user_id]) {
             summaryMap[req.applicant_user_id] = {
                 applicantId: req.applicant_user_id,
-                applicantName: (req.applicant as any)?.name || req.student_name,
-                role: req.applicant_role === 'teacher' ? 'Teacher' : 'Student',
+                applicantName: (req.applicant as any)?.name,
+                role: req.applicant_role as any,
                 totalAllotted: ASSUMED_ALLOTTED_LEAVES,
                 leavesTaken: 0,
                 balance: ASSUMED_ALLOTTED_LEAVES
@@ -129,8 +124,7 @@ export default function AdminLeaveManagementPage() {
   }, [allLeaveRequests]);
 
 
-  const renderLeaveTable = (requests: StoredLeaveApplicationDB[], type: 'Teacher' | 'Student' | 'All') => {
-    const filteredRequests = type === 'All' ? requests : requests.filter(r => r.applicant_role === type.toLowerCase());
+  const renderLeaveTable = (requests: StoredLeaveApplicationDB[], type: 'All') => {
     
     return (
     <Table>
@@ -146,9 +140,9 @@ export default function AdminLeaveManagementPage() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredRequests.map((req) => (
+        {requests.map((req) => (
           <TableRow key={req.id}>
-            <TableCell className="font-medium">{(req.applicant as any)?.name || req.student_name}</TableCell>
+            <TableCell className="font-medium">{(req.applicant as any)?.name}</TableCell>
             <TableCell className="capitalize">{req.applicant_role}</TableCell>
             <TableCell>{format(parseISO(req.submission_date), 'PP')}</TableCell>
             <TableCell className="max-w-xs truncate">{req.reason}</TableCell>
@@ -213,7 +207,7 @@ export default function AdminLeaveManagementPage() {
              <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center"><BarChart3 className="mr-2 h-5 w-5" />Employee Leave Summary</CardTitle>
-                  <CardDescription>An overview of approved leave balances. Allotted leaves are assumed to be 3 for this report.</CardDescription>
+                  <CardDescription>An overview of approved leave balances. Allotted leaves are assumed to be 12 for this report.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   {isLoading ? (
@@ -235,7 +229,7 @@ export default function AdminLeaveManagementPage() {
                         {leaveSummaryData.map((summary) => (
                           <TableRow key={summary.applicantId}>
                             <TableCell className="font-medium">{summary.applicantName}</TableCell>
-                            <TableCell>{summary.role}</TableCell>
+                            <TableCell className="capitalize">{summary.role}</TableCell>
                             <TableCell className="text-center">{summary.totalAllotted}</TableCell>
                             <TableCell className="text-center">{summary.leavesTaken}</TableCell>
                             <TableCell className="text-center font-bold">{summary.balance}</TableCell>

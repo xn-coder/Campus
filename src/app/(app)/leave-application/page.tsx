@@ -35,7 +35,7 @@ export default function LeaveApplicationPage() {
     const result = await getLeaveRequestsAction({
       school_id: currentSchoolId,
       applicant_user_id: currentUserId,
-      target_role: currentUserRole as 'student' | 'teacher' | 'accountant',
+      // No target_role needed as it fetches based on applicant_user_id now
     });
 
     if (result.ok) {

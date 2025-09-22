@@ -65,8 +65,6 @@ export interface Holiday {
 // For DB interactions with `leave_applications` table
 export interface StoredLeaveApplicationDB {
   id: string;
-  student_profile_id?: string | null;
-  student_name: string;
   reason: string;
   start_date: string;
   end_date: string;
@@ -83,7 +81,6 @@ export interface StoredLeaveApplicationDB {
   updated_at?: string;
   // For joined data
   applicant?: { name: string; email: string };
-  student?: { name: string; email: string; class_id?: string | null };
 }
 
 export interface Student {

@@ -3,7 +3,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { revalidatePath } from 'next/cache';
-import type { StoredLeaveApplicationDB, UserRole, LeaveRequestStatus, Student, Teacher, Accountant } from '@/types';
+import type { StoredLeaveApplicationDB, UserRole, Student, Teacher, Accountant } from '@/types';
 
 export async function getUserProfileForLeaveAction(userId: string, role: UserRole): Promise<{ profile: Student | Teacher | Accountant | null, schoolId: string | null }> {
     const supabase = createSupabaseServerClient();
@@ -26,14 +26,13 @@ export async function getUserProfileForLeaveAction(userId: string, role: UserRol
 
 
 interface SubmitLeaveApplicationInput {
-  student_profile_id?: string;
   reason: string;
   start_date: string;
   end_date: string;
   medical_notes_data_uri?: string;
   applicant_user_id: string;
   applicant_role: UserRole | 'guest';
-  applicant_name: string; // Keep this for display on the teacher/admin side for now
+  applicant_name: string;
   school_id: string;
 }
 
@@ -45,14 +44,12 @@ export async function submitLeaveApplicationAction(
     const { data, error } = await supabase
       .from('leave_applications')
       .insert({
-        student_profile_id: input.student_profile_id,
-        student_name: input.applicant_name, // Using applicant_name for this field now
         reason: input.reason,
         start_date: input.start_date,
         end_date: input.end_date,
         medical_notes_data_uri: input.medical_notes_data_uri,
         submission_date: new Date().toISOString(),
-        status: 'Pending', // All requests are now pending admin approval
+        status: 'Pending',
         applicant_user_id: input.applicant_user_id,
         applicant_role: input.applicant_role,
         school_id: input.school_id,
@@ -78,23 +75,21 @@ export async function submitLeaveApplicationAction(
 interface GetLeaveRequestsParams {
   school_id: string;
   teacher_id?: string; // For teacher role to get students in their classes
-  student_user_id?: string; // For student role
-  applicant_user_id?: string; // For fetching a specific user's own requests (e.g., a teacher)
+  applicant_user_id?: string; // For fetching a specific user's own requests (e.g., a teacher, student, accountant)
   target_role?: 'student' | 'teacher' | 'accountant';
 }
 
 // Fetches leave requests.
 export async function getLeaveRequestsAction(params: GetLeaveRequestsParams): Promise<{ ok: boolean; message?: string; applications?: StoredLeaveApplicationDB[] }> {
   const supabase = createSupabaseServerClient();
-  const { school_id, teacher_id, student_user_id, applicant_user_id, target_role } = params;
+  const { school_id, teacher_id, applicant_user_id, target_role } = params;
 
   try {
     let query = supabase
       .from('leave_applications')
       .select(`
         *,
-        applicant:applicant_user_id ( name, email ),
-        student:student_profile_id ( name, email, class_id )
+        applicant:applicant_user_id ( name, email )
       `)
       .eq('school_id', school_id)
       .order('submission_date', { ascending: false });
@@ -102,40 +97,34 @@ export async function getLeaveRequestsAction(params: GetLeaveRequestsParams): Pr
     if (target_role) {
       query = query.eq('applicant_role', target_role);
     }
+    
     if(applicant_user_id) {
         query = query.eq('applicant_user_id', applicant_user_id);
     }
     
-    if (target_role === 'student') {
-      if (student_user_id) {
-          const { data: student, error: studentErr } = await supabase.from('students').select('id').eq('user_id', student_user_id).single();
-          if(studentErr || !student) {
-              return { ok: false, message: "Could not find student profile for this user."}
-          }
-          query = query.eq('student_profile_id', student.id);
-      } else if (teacher_id) {
-        const { data: teacherClasses, error: classesError } = await supabase
-          .from('classes')
-          .select('id')
-          .eq('teacher_id', teacher_id)
-          .eq('school_id', school_id);
+    // Special handling for teachers fetching their students' leave requests
+    if (target_role === 'student' && teacher_id) {
+      const { data: teacherClasses, error: classesError } = await supabase
+        .from('classes')
+        .select('id')
+        .eq('teacher_id', teacher_id)
+        .eq('school_id', school_id);
 
-        if (classesError) throw classesError;
-        const teacherClassIds = (teacherClasses || []).map(c => c.id);
-        if (teacherClassIds.length === 0) return { ok: true, applications: [] };
+      if (classesError) throw classesError;
+      const teacherClassIds = (teacherClasses || []).map(c => c.id);
+      if (teacherClassIds.length === 0) return { ok: true, applications: [] };
 
-        const { data: studentsInClasses, error: studentsError } = await supabase
-          .from('students')
-          .select('id')
-          .in('class_id', teacherClassIds)
-          .eq('school_id', school_id);
-        
-        if (studentsError) throw studentsError;
-        const studentProfileIdsInTeacherClasses = (studentsInClasses || []).map(s => s.id);
-        if (studentProfileIdsInTeacherClasses.length === 0) return { ok: true, applications: [] };
+      const { data: studentsInClasses, error: studentsError } = await supabase
+        .from('students')
+        .select('user_id')
+        .in('class_id', teacherClassIds)
+        .eq('school_id', schoolId);
+      
+      if (studentsError) throw studentsError;
+      const studentUserIds = (studentsInClasses || []).map(s => s.user_id);
+      if (studentUserIds.length === 0) return { ok: true, applications: [] };
 
-        query = query.in('student_profile_id', studentProfileIdsInTeacherClasses);
-      }
+      query = query.in('applicant_user_id', studentUserIds);
     }
 
     const { data, error } = await query;
