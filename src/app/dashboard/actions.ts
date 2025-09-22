@@ -27,26 +27,35 @@ interface DashboardData {
   // Common
   recentAnnouncements?: Pick<AnnouncementDB, 'id' | 'title' | 'date' | 'author_name' | 'posted_by_role' | 'target_class'>[];
   upcomingEvents?: Pick<CalendarEventDB, 'id' | 'title' | 'date' | 'start_time' | 'is_all_day'>[];
-  // Counts for sidebar
-  sidebarCounts?: {
-      pendingLeaveRequests?: number;
-      pendingTCRequests?: number;
-      pendingAssignments?: number;
-      pendingFeePayments?: number;
-  }
 }
+
 
 
 export async function getDashboardDataAction(userId: string, userRole: UserRole): Promise<{ ok: boolean; data?: DashboardData; message?: string }> {
   const supabase = createSupabaseServerClient();
-  const dashboardData: DashboardData = { sidebarCounts: {} };
+  const dashboardData: DashboardData = { };
   
   // --- Common Data: Announcements & Events ---
   const { data: userRecord, error: userError } = await supabase.from('users').select('school_id').eq('id', userId).single();
   const schoolId = userRecord?.school_id;
 
   if (schoolId) {
-      const announcementsResult = await getAnnouncementsAction({ school_id: schoolId, user_role: userRole, user_id: userId, student_user_id: userRole === 'student' ? userId : undefined });
+      const { data: studentData } = await supabase.from('students').select('class_id').eq('user_id', userId).single();
+      const { data: teacherData } = await supabase.from('teachers').select('id').eq('user_id', userId).single();
+      let teacherClassIds: string[] = [];
+      if(teacherData) {
+        const {data: classIds} = await supabase.from('classes').select('id').eq('teacher_id', teacherData.id);
+        if(classIds) teacherClassIds = classIds.map(c => c.id);
+      }
+
+      const announcementsResult = await getAnnouncementsAction({ 
+        school_id: schoolId, 
+        user_role: userRole, 
+        user_id: userId,
+        student_user_id: userRole === 'student' ? userId : undefined,
+        teacher_class_ids: teacherClassIds
+      });
+
       if (announcementsResult.ok) {
           dashboardData.recentAnnouncements = announcementsResult.announcements?.slice(0, 5);
       }
@@ -67,13 +76,15 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
   // --- Role-Specific Data ---
   switch(userRole) {
       case 'student': {
-          const { data: student } = await supabase.from('students').select('id, school_id').eq('user_id', userId).single();
+          const { data: student } = await supabase.from('students').select('id, class_id, school_id').eq('user_id', userId).single();
           if (student) {
               const { count: assignmentCount } = await supabase.from('assignments').select('id', { count: 'exact', head: true }).eq('school_id', student.school_id).eq('class_id', student.class_id);
               dashboardData.upcomingAssignmentsCount = assignmentCount || 0;
 
               const { count: pendingFees } = await supabase.from('student_fee_payments').select('id', { count: 'exact', head: true }).eq('student_id', student.id).eq('status', 'Pending');
-              dashboardData.sidebarCounts!.pendingFeePayments = pendingFees || 0;
+              if ((pendingFees || 0) > 0) {
+                dashboardData.feeStatus = { isDefaulter: true, message: `You have ${pendingFees} overdue fee payment(s).` };
+              }
           }
           break;
       }
@@ -109,8 +120,6 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
               dashboardData.totalSchoolClasses = classesRes.count || 0;
               dashboardData.pendingFeesCount = feesRes.count || 0;
               dashboardData.totalExpenses = (expensesRes.data || []).reduce((sum, item) => sum + item.amount, 0);
-              dashboardData.sidebarCounts!.pendingLeaveRequests = leaveRes.count || 0;
-              dashboardData.sidebarCounts!.pendingTCRequests = tcRes.count || 0;
           }
           break;
       case 'superadmin': {

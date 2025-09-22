@@ -1,10 +1,9 @@
-
 "use client";
 
 import * as React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppLayout from '@/components/layout/app-layout';
-import { getSidebarCountsAction } from '@/app/dashboard/actions';
+import { getSidebarCountsAction } from './sidebar-actions';
 
 export default function ApplicationLayout({ children }: { children: React.ReactNode }) {
   const [sidebarCounts, setSidebarCounts] = React.useState<Record<string, number>>({});
@@ -21,7 +20,7 @@ export default function ApplicationLayout({ children }: { children: React.ReactN
         if (result.ok) {
           setSidebarCounts(result.sidebarCounts || {});
           setIsFeeDefaulter(result.isFeeDefaulter || false);
-          setLockoutMessage(result.lockoutMessage || 'Feature locked.');
+          setLockoutMessage(result.lockoutMessage || '');
         }
       }
     }
