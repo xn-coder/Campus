@@ -133,16 +133,18 @@ export default function CourseResourcePage() {
             return;
         }
 
-        if (!userId || !resource || !courseId) return;
+        if (!userId || !role || !resource || !courseId) return;
 
-        const result = await markResourceAsCompleteAction(userId, courseId, resourceId);
+        const result = await markResourceAsCompleteAction(userId, role, courseId, resourceId);
         
         if (result.ok) {
             setIsCompleted(true);
             toast({title: "Completed!", description: "Your progress has been saved."});
-            const { completedResources } = await getCompletionStatusAction(userId, courseId);
-            if (completedResources && course) {
-                setOverallProgress(calculateProgress(course, completedResources));
+            if (role === 'student' || role === 'teacher') {
+              const { completedResources } = await getCompletionStatusAction(userId, role, courseId);
+              if (completedResources && course) {
+                  setOverallProgress(calculateProgress(course, completedResources));
+              }
             }
         } else {
             toast({title: "Error", description: result.message, variant: "destructive"});
@@ -259,17 +261,17 @@ export default function CourseResourcePage() {
             const loadedCourse = courseResult.course;
             setCourse(loadedCourse);
 
-            // Fetch student-specific details if the user is a student
-            if (currentUserRole === 'student') {
+            // Fetch user-specific details if the user is a student or teacher
+            if (currentUserRole === 'student' || currentUserRole === 'teacher') {
                 const { data: user } = await supabase.from('users').select('name, school_id').eq('id', userId).single();
-                setCurrentStudentName(user?.name || 'Valued Student');
+                setCurrentStudentName(user?.name || 'Valued User');
                 if (user?.school_id) {
                     const { data: school } = await supabase.from('schools').select('name').eq('id', user.school_id).single();
                     setCurrentSchoolName(school?.name || 'CampusHub');
                 } else {
                     setCurrentSchoolName('CampusHub');
                 }
-                const completionResult = await getCompletionStatusAction(userId, courseId);
+                const completionResult = await getCompletionStatusAction(userId, currentUserRole, courseId);
                 if (completionResult.ok && completionResult.completedResources) {
                     setIsCompleted(!!completionResult.completedResources[resourceId]);
                     setOverallProgress(calculateProgress(loadedCourse, completionResult.completedResources));
@@ -469,7 +471,7 @@ export default function CourseResourcePage() {
                                   <CheckCircle className="mr-2 h-4 w-4" />
                                   {isCompleted ? "Completed" : "Mark as Completed"}
                               </Button>
-                              {isCompleted && currentUserRole === 'student' && (
+                              {isCompleted && (currentUserRole === 'student' || currentUserRole === 'teacher') && (
                                   <Button asChild size="sm">
                                       <Link href={`/lms/courses/${courseId}/certificate?studentName=${encodeURIComponent(currentStudentName)}&courseName=${encodeURIComponent(resource.title)}&schoolName=${encodeURIComponent(currentSchoolName)}&completionDate=${new Date().toISOString()}&certificateId=${uuidv4()}`}>
                                           <Award className="mr-2 h-4 w-4" /> Get Certificate

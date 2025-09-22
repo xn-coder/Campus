@@ -3,6 +3,7 @@
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { revalidatePath } from 'next/cache';
 import type { Course, CourseResource, UserRole } from '@/types';
 
 export async function getCourseForViewingAction(courseId: string): Promise<{

@@ -88,9 +88,9 @@ function ViewCoursePageContent() {
       
       if (courseResult.ok && courseResult.course) {
         setCourse(courseResult.course);
-        if (role === 'student') {
+        if (role === 'student' || role === 'teacher') {
             const { data: user } = await supabase.from('users').select('name, school_id').eq('id', userId).single();
-            setCurrentStudentName(user?.name || 'Valued Student');
+            setCurrentStudentName(user?.name || 'Valued User');
             if (user?.school_id) {
               const { data: school } = await supabase.from('schools').select('name').eq('id', user.school_id).single();
               setCurrentSchoolName(school?.name || 'CampusHub');
@@ -98,7 +98,7 @@ function ViewCoursePageContent() {
                 setCurrentSchoolName('CampusHub');
             }
             
-            const completionResult = await getCompletionStatusAction(userId, courseId);
+            const completionResult = await getCompletionStatusAction(userId, role, courseId);
             if (completionResult.ok && completionResult.completedResources) {
                 setCompletedResources(completionResult.completedResources);
                 const initialProgress = calculateProgress(courseResult.course, completionResult.completedResources);
