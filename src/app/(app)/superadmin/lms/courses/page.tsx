@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -291,7 +290,7 @@ export default function SuperAdminManageCoursesPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                              <DropdownMenuItem asChild>
-                                <Link href={`/admin/lms/courses/${course.id}/content`}>
+                                <Link href={`/superadmin/lms/courses/${course.id}`}>
                                    <Settings className="mr-2 h-4 w-4" /> Manage Content
                                 </Link>
                               </DropdownMenuItem>
@@ -424,4 +423,4 @@ export default function SuperAdminManageCoursesPage() {
   );
 }
 
-
+    
