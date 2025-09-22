@@ -1,7 +1,7 @@
 
 "use client";
 
-import type React from 'react';
+import * as React from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppLayout from '@/components/layout/app-layout';
 import { getSidebarCountsAction } from '@/app/dashboard/actions';
