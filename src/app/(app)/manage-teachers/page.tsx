@@ -1,4 +1,3 @@
-
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -11,57 +10,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { Teacher, User } from '@/types'; 
-import { useState, useEffect, type FormEvent, type ChangeEvent, useMemo } from 'react';
+import { useState, useEffect, type FormEvent, type ChangeEvent, useMemo, useCallback } from 'react'; // Added useCallback
 import { PlusCircle, Edit2, Trash2, Search, Users, FilePlus, Activity, Briefcase, UserPlus, Save, Loader2, FileDown, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabaseClient';
-import { createTeacherAction, updateTeacherAction, deleteTeacherAction } from './actions';
+// Removed direct supabase import for client-side queries no longer needed
+// import { supabase } from '@/lib/supabaseClient'; 
+
+import { 
+  createTeacherAction, 
+  updateTeacherAction, 
+  deleteTeacherAction,
+  fetchAdminSchoolIdAction, // Imported from actions
+  fetchTeachersAction // Imported from actions
+} from './actions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const ITEMS_PER_PAGE = 10;
 
-async function fetchAdminSchoolId(adminUserId: string): Promise<string | null> {
-  // First, try to get school_id directly from the user's record
-  const { data: userRec, error: userErr } = await supabase
-    .from('users')
-    .select('school_id')
-    .eq('id', adminUserId)
-    .single();
-  
-  if (userErr && userErr.code !== 'PGRST116') {
-    console.error("Error fetching user record for school ID:", userErr.message);
-    // Don't return yet, try fallback
-  }
-
-  if (userRec?.school_id) {
-    return userRec.school_id;
-  }
-
-  // Fallback: If school_id is null on the user record, check if they are an admin_user_id in the schools table
-  console.warn(`User ${adminUserId} has no school_id on their record. Falling back to check schools.admin_user_id.`);
-  const { data: school, error: schoolError } = await supabase 
-    .from('schools')
-    .select('id')
-    .eq('admin_user_id', adminUserId)
-    .single();
-
-  if (schoolError && schoolError.code !== 'PGRST116') { // Ignore "no rows found" error
-    console.error("Error during fallback school fetch for admin:", schoolError.message);
-    return null;
-  }
-  
-  if (school) {
-    return school.id;
-  }
-
-  console.error(`Could not determine school ID for admin ${adminUserId} via user record or schools table.`);
-  return null;
+// Re-defining Teacher type if it only had optional user_id, now ensuring it's present for client-side rendering where relevant
+interface ClientTeacher extends Teacher {
+    user_id: string; // Ensure user_id is always present for client-side display/actions
 }
-
 
 export default function ManageTeachersPage() {
   const { toast } = useToast();
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teachers, setTeachers] = useState<ClientTeacher[]>([]); // Using ClientTeacher type
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState("list-teachers");
   const [isLoading, setIsLoading] = useState(true); 
@@ -79,11 +52,27 @@ export default function ManageTeachersPage() {
 
   // For Edit Dialog
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<ClientTeacher | null>(null); // Using ClientTeacher
   const [editTeacherName, setEditTeacherName] = useState('');
   const [editTeacherEmail, setEditTeacherEmail] = useState('');
   const [editTeacherSubject, setEditTeacherSubject] = useState('');
   const [editTeacherProfilePicUrl, setEditTeacherProfilePicUrl] = useState('');
+
+
+  // Moved fetchTeachers logic into a useCallback to prevent unnecessary re-renders
+  // and ensure it uses the latest schoolId.
+  const fetchTeachers = useCallback(async (schoolId: string) => {
+    setIsLoading(true); 
+    const result = await fetchTeachersAction(schoolId); // Call the server action
+
+    if (result.error) {
+      toast({ title: "Error", description: result.error, variant: "destructive" });
+      setTeachers([]);
+    } else {
+      setTeachers(result.data || []);
+    }
+    setIsLoading(false); 
+  }, [toast]); // Dependencies for useCallback
 
 
   useEffect(() => {
@@ -91,10 +80,11 @@ export default function ManageTeachersPage() {
     setCurrentAdminUserId(adminIdFromStorage);
 
     if (adminIdFromStorage) {
-      fetchAdminSchoolId(adminIdFromStorage).then(fetchedSchoolId => {
+      // Call the server action for fetching admin school ID
+      fetchAdminSchoolIdAction(adminIdFromStorage).then(fetchedSchoolId => {
         setCurrentSchoolId(fetchedSchoolId);
         if (fetchedSchoolId) {
-          fetchTeachers(fetchedSchoolId); 
+          fetchTeachers(fetchedSchoolId); // Call the memoized fetchTeachers
         } else {
           setIsLoading(false); 
           toast({ title: "School Not Found", description: "Admin not linked to a school or school ID could not be determined. Cannot manage teachers.", variant: "destructive"});
@@ -104,33 +94,9 @@ export default function ManageTeachersPage() {
        setIsLoading(false); 
        toast({ title: "Authentication Error", description: "Admin user ID not found. Please log in.", variant: "destructive"});
     }
+  // Added fetchTeachers to dependency array due to useCallback
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toast]); 
-
-  async function fetchTeachers(schoolId: string) {
-    setIsLoading(true); 
-    const { data, error } = await supabase 
-      .from('teachers')
-      .select('id, name, email, subject, profile_picture_url, user_id')
-      .eq('school_id', schoolId);
-
-    if (error) {
-      toast({ title: "Error", description: `Failed to fetch teacher data: ${error.message}`, variant: "destructive" });
-      setTeachers([]);
-    } else {
-      const formattedTeachers = data?.map(t => ({
-        id: t.id, 
-        user_id: t.user_id, 
-        name: t.name,
-        email: t.email, 
-        subject: t.subject,
-        profile_picture_url: t.profile_picture_url,
-        school_id: schoolId, 
-      })) || [];
-      setTeachers(formattedTeachers);
-    }
-    setIsLoading(false); 
-  }
+  }, [toast, fetchTeachers]); 
 
   const filteredTeachers = useMemo(() => teachers.filter(teacher =>
     teacher.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -145,7 +111,7 @@ export default function ManageTeachersPage() {
   const totalPages = Math.ceil(filteredTeachers.length / ITEMS_PER_PAGE);
 
   
-  const handleOpenEditDialog = (teacher: Teacher) => { 
+  const handleOpenEditDialog = (teacher: ClientTeacher) => { // Using ClientTeacher
     setEditingTeacher(teacher);
     setEditTeacherName(teacher.name);
     setEditTeacherEmail(teacher.email);
@@ -164,7 +130,7 @@ export default function ManageTeachersPage() {
     
     const result = await updateTeacherAction({
       id: editingTeacher.id,
-      userId: editingTeacher.user_id,
+      userId: editingTeacher.user_id, // Ensure user_id is passed
       name: editTeacherName,
       email: editTeacherEmail,
       subject: editTeacherSubject,
@@ -183,11 +149,12 @@ export default function ManageTeachersPage() {
     setIsSubmitting(false);
   };
   
-  const handleDeleteTeacher = async (teacher: Teacher) => { 
+  const handleDeleteTeacher = async (teacher: ClientTeacher) => { // Using ClientTeacher
     if (!currentSchoolId) return;
     if(confirm(`Are you sure you want to delete teacher ${teacher.name}? This will also remove their login access.`)) {
       setIsSubmitting(true);
-      const result = await deleteTeacherAction(teacher.id, teacher.user_id, currentSchoolId);
+      // Ensure user_id is passed to the delete action
+      const result = await deleteTeacherAction(teacher.id, teacher.user_id, currentSchoolId); 
       if (result.ok) {
         toast({ title: "Teacher Deleted", description: result.message, variant: "destructive" });
         if(currentSchoolId) fetchTeachers(currentSchoolId);

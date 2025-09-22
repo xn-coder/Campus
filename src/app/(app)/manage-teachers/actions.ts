@@ -1,21 +1,103 @@
-
 'use server';
 
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { revalidatePath } from 'next/cache';
+import type { Teacher, User } from '@/types'; // Assuming Teacher and User types are defined here or accessible
 
 const SALT_ROUNDS = 10;
 
+// Type definitions for internal use in actions.ts
+interface TeacherWithUserId extends Teacher {
+    user_id: string; // Ensure user_id is always present for actions
+}
+
 interface UpdateTeacherInput {
   id: string; 
-  userId?: string; 
+  userId?: string; // Optional as it might not be present if teacher was created externally
   name: string;
   email: string;
   subject: string;
   profilePictureUrl?: string;
   school_id: string;
+}
+
+/**
+ * Fetches the school ID associated with an admin user.
+ * It first checks the user's own record for school_id, then falls back to checking the 'schools' table
+ * if the user is listed as an admin_user_id there.
+ * @param adminUserId The ID of the admin user.
+ * @returns The school ID or null if not found.
+ */
+export async function fetchAdminSchoolIdAction(adminUserId: string): Promise<string | null> {
+  const supabase = createSupabaseServerClient(); // Use server client
+
+  // First, try to get school_id directly from the user's record
+  const { data: userRec, error: userErr } = await supabase
+    .from('users')
+    .select('school_id')
+    .eq('id', adminUserId)
+    .single();
+  
+  if (userErr && userErr.code !== 'PGRST116') { // PGRST116 is 'No rows found'
+    console.error("Error fetching user record for school ID:", userErr.message);
+  }
+
+  if (userRec?.school_id) {
+    return userRec.school_id;
+  }
+
+  // Fallback: If school_id is null on the user record, check if they are an admin_user_id in the schools table
+  console.warn(`User ${adminUserId} has no school_id on their record. Falling back to check schools.admin_user_id.`);
+  const { data: school, error: schoolError } = await supabase 
+    .from('schools')
+    .select('id')
+    .eq('admin_user_id', adminUserId)
+    .single();
+
+  if (schoolError && schoolError.code !== 'PGRST116') {
+    console.error("Error during fallback school fetch for admin:", schoolError.message);
+    return null;
+  }
+  
+  if (school) {
+    return school.id;
+  }
+
+  console.error(`Could not determine school ID for admin ${adminUserId} via user record or schools table.`);
+  return null;
+}
+
+/**
+ * Fetches all teachers for a given school ID.
+ * @param schoolId The ID of the school.
+ * @returns An array of Teacher objects or an error message.
+ */
+export async function fetchTeachersAction(schoolId: string): Promise<{ data?: TeacherWithUserId[]; error?: string }> {
+  const supabase = createSupabaseServerClient(); // Use server client
+  
+  const { data, error } = await supabase 
+    .from('teachers')
+    .select('id, name, email, subject, profile_picture_url, user_id')
+    .eq('school_id', schoolId);
+
+  if (error) {
+    console.error("Error fetching teacher data in action:", error.message);
+    return { error: `Failed to fetch teacher data: ${error.message}` };
+  } else {
+    // Ensure all returned teachers have user_id, which is mandatory for internal actions
+    const formattedTeachers: TeacherWithUserId[] = data?.map(t => ({
+      id: t.id, 
+      user_id: t.user_id, 
+      name: t.name,
+      email: t.email, 
+      subject: t.subject,
+      profile_picture_url: t.profile_picture_url,
+      school_id: schoolId, // Explicitly set school_id based on query
+    })) || [];
+    return { data: formattedTeachers };
+  }
 }
 
 export async function createTeacherAction(
