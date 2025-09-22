@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, type FormEvent, useEffect, useCallback } from 'react';
@@ -20,8 +19,13 @@ import { DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose
 
 const formSchema = z.object({
   applicantName: z.string().min(1, "Applicant name is required"),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
   reason: z.string().min(10, "Reason must be at least 10 characters long"),
   medicalNotes: z.any().optional(),
+}).refine(data => new Date(data.endDate) >= new Date(data.startDate), {
+    message: "End date cannot be before start date",
+    path: ["endDate"],
 });
 
 type LeaveFormValues = z.infer<typeof formSchema>;
@@ -50,6 +54,8 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       applicantName: '',
+      startDate: '',
+      endDate: '',
       reason: '',
     }
   });
@@ -108,6 +114,8 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
       const result = await submitLeaveApplicationAction({
         student_name: data.applicantName, // This field serves as the applicant's name
         reason: data.reason,
+        start_date: data.startDate,
+        end_date: data.endDate,
         medical_notes_data_uri: medicalNotesDataUri,
         student_profile_id: studentProfile?.id,
         applicant_user_id: currentUserId,
@@ -119,7 +127,7 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
         setSubmissionResult(result.application);
         toast({ title: "Application Submitted", description: result.message});
         
-        const resetValues = { reason: '', medicalNotes: undefined, applicantName: data.applicantName };
+        const resetValues = { reason: '', startDate: '', endDate: '', medicalNotes: undefined, applicantName: data.applicantName };
         reset(resetValues);
         setFileName(null);
         onApplicationSubmitted?.();
@@ -161,6 +169,18 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
                 <Label htmlFor="applicantName">Applicant Name</Label>
                 <Controller name="applicantName" control={control} render={({ field }) => <Input id="applicantName" {...field} disabled />} />
             </div>
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Controller name="startDate" control={control} render={({ field }) => <Input id="startDate" type="date" {...field} />} />
+                    {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>}
+                </div>
+                <div>
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Controller name="endDate" control={control} render={({ field }) => <Input id="endDate" type="date" {...field} />} />
+                    {errors.endDate && <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>}
+                </div>
+            </div>
             <div>
                 <Label htmlFor="reason">Reason for Absence</Label>
                 <Controller name="reason" control={control} render={({ field }) => <Textarea id="reason" placeholder="Explain the reason..." {...field} />} />
@@ -195,6 +215,19 @@ export default function LeaveForm({ onApplicationSubmitted }: LeaveFormProps) {
                 render={({ field }) => <Input id="applicantName" placeholder="Enter your full name" {...field} disabled />}
               />
               {errors.applicantName && <p className="text-sm text-destructive mt-1">{errors.applicantName.message}</p>}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="startDate">Start Date</Label>
+                    <Controller name="startDate" control={control} render={({ field }) => <Input id="startDate" type="date" {...field} />} />
+                    {errors.startDate && <p className="text-sm text-destructive mt-1">{errors.startDate.message}</p>}
+                </div>
+                <div>
+                    <Label htmlFor="endDate">End Date</Label>
+                    <Controller name="endDate" control={control} render={({ field }) => <Input id="endDate" type="date" {...field} />} />
+                    {errors.endDate && <p className="text-sm text-destructive mt-1">{errors.endDate.message}</p>}
+                </div>
             </div>
 
             <div>

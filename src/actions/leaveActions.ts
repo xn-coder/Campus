@@ -29,6 +29,8 @@ interface SubmitLeaveApplicationInput {
   student_profile_id?: string;
   student_name: string;
   reason: string;
+  start_date: string;
+  end_date: string;
   medical_notes_data_uri?: string;
   applicant_user_id: string;
   applicant_role: UserRole | 'guest';
@@ -46,6 +48,8 @@ export async function submitLeaveApplicationAction(
         student_profile_id: input.student_profile_id,
         student_name: input.student_name,
         reason: input.reason,
+        start_date: input.start_date,
+        end_date: input.end_date,
         medical_notes_data_uri: input.medical_notes_data_uri,
         submission_date: new Date().toISOString(),
         status: 'Pending', // All requests are now pending admin approval
