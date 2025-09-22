@@ -9,6 +9,33 @@ import type { Teacher } from '@/types';
 
 const SALT_ROUNDS = 10;
 
+// New action to fetch all accountants for a school
+export async function getTeachersForSchoolAction(schoolId: string): Promise<{ ok: boolean; teachers?: Teacher[], message?: string }> {
+    if (!schoolId) {
+        return { ok: false, message: "School ID is required." };
+    }
+    const supabase = createSupabaseServerClient();
+    try {
+        const { data, error } = await supabase
+            .from('teachers')
+            .select('*')
+            .eq('school_id', schoolId)
+            .order('name');
+
+        if (error) {
+          let friendlyMessage = `Failed to fetch teachers: ${error.message}`;
+           if (error.message.includes('relation "public.teachers" does not exist')) {
+            friendlyMessage = "The 'teachers' table is missing from the database. Please run the necessary database migration to enable this feature.";
+          }
+          return { ok: false, message: friendlyMessage };
+        }
+        return { ok: true, teachers: data || [] };
+    } catch (e: any) {
+        return { ok: false, message: e.message || 'An unexpected server error occurred.' };
+    }
+}
+
+
 // New action to fetch all data needed for the manage teachers page
 export async function getAdminTeacherManagementPageDataAction(adminUserId: string): Promise<{
   ok: boolean;
@@ -28,6 +55,7 @@ export async function getAdminTeacherManagementPageDataAction(adminUserId: strin
         if (userErr && userErr.code !== 'PGRST116') {
              throw new Error(`Failed to fetch user record: ${userErr.message}`);
         } else if (!schoolId) {
+            // Fallback for older setups or different admin linking methods
             const { data: schoolRec, error: schoolErr } = await supabase.from('schools').select('id').eq('admin_user_id', adminUserId).single();
             if (schoolErr && schoolErr.code !== 'PGRST116') {
                 throw new Error(`Failed to fetch school record: ${schoolErr.message}`);
