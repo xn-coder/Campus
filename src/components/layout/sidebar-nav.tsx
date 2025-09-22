@@ -88,7 +88,7 @@ const adminNavItems: NavItem[] = [
   { href: '/communication', label: 'Announcements', icon: Megaphone },
   { href: '/calendar-events', label: 'Calendar & Events', icon: CalendarDays },
   { href: '/admin/reports', label: 'Activity Reports', icon: BarChart3 },
-  { href: '/admin/leave-management', label: 'Leave Management', badgeId: 'pendingLeaveRequests' }, 
+  { href: '/admin/leave-management', label: 'Leave Management', icon: ClipboardEdit, badgeId: 'pendingLeaveRequests' }, 
 ];
 
 const teacherNavItems: NavItem[] = [
