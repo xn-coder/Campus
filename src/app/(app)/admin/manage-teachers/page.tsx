@@ -97,7 +97,7 @@ export default function ManageTeachersPage() {
 
   const handleEditTeacherSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!editingTeacher || !editTeacherName.trim() || !editTeacherEmail.trim() || !editTeacherSubject.trim() || !currentSchoolId) {
+    if (!editingTeacher || !editTeacherName.trim() || !editTeacherEmail.trim() || !editTeacherSubject.trim() || !currentSchoolId || !currentAdminUserId) {
       toast({ title: "Error", description: "Name, Email, Subject, and School context are required.", variant: "destructive" });
       return;
     }
@@ -128,7 +128,7 @@ export default function ManageTeachersPage() {
   };
   
   const handleDeleteTeacher = async (teacher: Teacher) => { 
-    if (!currentSchoolId) return;
+    if (!currentSchoolId || !currentAdminUserId) return;
     if(confirm(`Are you sure you want to delete teacher ${teacher.name}? This will also remove their login access.`)) {
       setIsSubmitting(true);
       const result = await deleteTeacherAction(teacher.id, teacher.user_id, currentSchoolId);
@@ -144,7 +144,7 @@ export default function ManageTeachersPage() {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>, type: 'create' | 'edit') => {
     const file = e.target.files?.[0];
-    if (file && file.size > 2 * 1024 * 1024) {
+    if (file && file.size > 2 * 1024 * 1024) { // 2MB limit
         toast({ title: "File too large", description: "Profile picture must be less than 2MB.", variant: "destructive"});
         e.target.value = ''; // Reset the input
         if (type === 'create') setNewTeacherProfilePicFile(null);
@@ -161,7 +161,7 @@ export default function ManageTeachersPage() {
       toast({ title: "Error", description: "Name, Email, and Subject are required.", variant: "destructive" });
       return;
     }
-    if (!currentSchoolId) { 
+    if (!currentSchoolId || !currentAdminUserId) { 
       toast({ title: "Error", description: "School context not found. Cannot create teacher.", variant: "destructive" });
       return;
     }
