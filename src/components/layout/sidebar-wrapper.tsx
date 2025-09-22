@@ -1,8 +1,7 @@
 
 import { cookies } from 'next/headers';
 import { getDashboardDataAction } from '@/app/dashboard/actions';
-import { Sidebar, SidebarFooter, SidebarHeader, SidebarContent, SidebarTrigger } from '@/components/ui/sidebar';
-import SidebarNav from './sidebar-nav';
+import { Sidebar, SidebarFooter, SidebarHeader, SidebarContent, SidebarTrigger, SidebarNav } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
