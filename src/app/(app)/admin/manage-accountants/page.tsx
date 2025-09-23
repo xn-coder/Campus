@@ -12,13 +12,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { Accountant } from '@/types'; 
 import { useState, useEffect, type FormEvent, useMemo, useCallback } from 'react';
-import { PlusCircle, Edit2, Trash2, Search, Briefcase, UserPlus, Save, Loader2, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Search, Briefcase, UserPlus, Save, Loader2, MoreHorizontal, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/supabaseClient';
-import { createAccountantAction, updateAccountantAction, deleteAccountantAction, getAccountantsForSchoolAction } from './actions';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { createAccountantAction, updateAccountantAction, deleteAccountantAction, getAccountantsForSchoolAction, deactivateAccountantAction } from './actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Ban } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -159,18 +160,28 @@ export default function ManageAccountantsPage() {
   
   const handleDeleteAccountant = async (accountant: Accountant) => { 
     if (!currentSchoolId) return;
-    if(confirm(`Are you sure you want to delete accountant ${accountant.name}? This will also remove their login access.`)) {
-      setIsSubmitting(true);
-      const result = await deleteAccountantAction(accountant.id, accountant.user_id, currentSchoolId);
-      if (result.ok) {
-        toast({ title: "Accountant Deleted", description: result.message, variant: "destructive" });
-        if(currentSchoolId) fetchAccountants(currentSchoolId);
-      } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" });
-      }
-      setIsSubmitting(false);
+    setIsSubmitting(true);
+    const result = await deleteAccountantAction(accountant.id, accountant.user_id, currentSchoolId);
+    toast({ title: result.ok ? "Accountant Deleted" : "Error", description: result.message, variant: result.ok ? "destructive" : "destructive" });
+    if (result.ok && currentSchoolId) {
+      fetchAccountants(currentSchoolId);
     }
+    setIsSubmitting(false);
   };
+
+  const handleDeactivateAccountant = async (userId?: string) => {
+    if (!userId) {
+      toast({ title: "Error", description: "User ID not found for this accountant.", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await deactivateAccountantAction(userId);
+     toast({ title: result.ok ? "Success" : "Error", description: result.message, variant: result.ok ? "default" : "destructive" });
+    if (result.ok && currentSchoolId) {
+      fetchAccountants(currentSchoolId);
+    }
+    setIsSubmitting(false);
+  }
 
   const handleCreateAccountantSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -284,21 +295,44 @@ export default function ManageAccountantsPage() {
                             <TableCell className="font-medium">{accountant.name}</TableCell>
                             <TableCell>{accountant.email}</TableCell>
                             <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onSelect={() => handleOpenEditDialog(accountant)}>
-                                    <Edit2 className="mr-2 h-4 w-4" /> Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onSelect={() => handleDeleteAccountant(accountant)} className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                              <AlertDialog>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onSelect={() => handleOpenEditDialog(accountant)}>
+                                      <Edit2 className="mr-2 h-4 w-4" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                     <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive">
+                                            <UserX className="mr-2 h-4 w-4" /> Deactivate Account
+                                        </DropdownMenuItem>
+                                     </AlertDialogTrigger>
+                                     <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="text-destructive">
+                                          <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                                        </DropdownMenuItem>
+                                      </AlertDialogTrigger>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                                 <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Do you want to deactivate or permanently delete {accountant.name}? Deactivation is reversible. Deletion is not.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeactivateAccountant(accountant.user_id)}>Deactivate</AlertDialogAction>
+                                    <AlertDialogAction onClick={() => handleDeleteAccountant(accountant)} className="bg-destructive hover:bg-destructive/90">Delete Permanently</AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             </TableCell>
                           </TableRow>
                         ))}

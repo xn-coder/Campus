@@ -178,16 +178,16 @@ export default function ManageStudentsPage() {
     setIsSubmitting(false);
   };
   
-  const handleTerminateStudent = async (student: Student) => { 
+  const handleDeactivateStudent = async (student: Student) => { 
     if (!currentSchoolId || !student.user_id) {
-        toast({ title: "Error", description: "Cannot terminate student without a valid user ID.", variant: "destructive" });
+        toast({ title: "Error", description: "Cannot deactivate student without a valid user ID.", variant: "destructive" });
         return;
     };
     
     setIsSubmitting(true);
     const result = await terminateStudentAction(student.id, student.user_id, currentSchoolId);
     if (result.ok) {
-      toast({ title: "Student Terminated", description: result.message });
+      toast({ title: "Student Deactivated", description: result.message });
       if(currentAdminUserId) fetchPageData(currentAdminUserId);
     } else {
       toast({ title: "Error", description: result.message, variant: "destructive" });
@@ -309,7 +309,7 @@ export default function ManageStudentsPage() {
               </div>
                <div className="flex items-center space-x-2">
                   <Checkbox id="showTerminated" checked={showTerminated} onCheckedChange={(checked) => setShowTerminated(!!checked)} />
-                  <Label htmlFor="showTerminated">Show Terminated Students</Label>
+                  <Label htmlFor="showTerminated">Show Deactivated Students</Label>
               </div>
               <Button onClick={handleDownloadCsv} disabled={isLoading || filteredStudents.length === 0} className="ml-auto">
                   <FileDown className="mr-2 h-4 w-4"/>
@@ -347,7 +347,7 @@ export default function ManageStudentsPage() {
                         <TableRow key={student.id} className={student.status !== 'Active' && student.status ? 'bg-muted/50' : ''}>
                           <TableCell>
                             <Avatar>
-                              <AvatarImage src={student.profile_picture_url || `https://placehold.co/40x40.png?text=${student.name.substring(0,2).toUpperCase()}`} alt={student.name} data-ai-hint="person portrait" />
+                              <AvatarImage src={student.profile_picture_url || `https://placehold.co/40x40.png?text=${student.name.substring(0,2).toUpperCase()}`} alt={student.name} data-ai-hint="person student" />
                               <AvatarFallback>{student.name.substring(0,2).toUpperCase()}</AvatarFallback>
                             </Avatar>
                           </TableCell>
@@ -380,7 +380,7 @@ export default function ManageStudentsPage() {
                                       <DropdownMenuItem onSelect={() => handleGenerateTC(student as Student)}><FileText className="mr-2 h-4 w-4"/>Generate TC</DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <AlertDialogTrigger asChild>
-                                        <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}><UserX className="mr-2 h-4 w-4"/>Terminate</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}><UserX className="mr-2 h-4 w-4"/>Deactivate</DropdownMenuItem>
                                       </AlertDialogTrigger>
                                     </>
                                   ) : (
@@ -393,8 +393,8 @@ export default function ManageStudentsPage() {
 
                               {student.status === 'Active' || !student.status ? (
                                   <AlertDialogContent>
-                                    <AlertDialogHeader><AlertDialogTitle>Terminate {student.name}?</AlertDialogTitle><AlertDialogDescription>This will mark the student as 'Terminated', unassign them from their class, and deactivate their login. This action is reversible.</AlertDialogDescription></AlertDialogHeader>
-                                    <AlertDialogFooter><AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleTerminateStudent(student as Student)} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Terminate</AlertDialogAction></AlertDialogFooter>
+                                    <AlertDialogHeader><AlertDialogTitle>Deactivate {student.name}?</AlertDialogTitle><AlertDialogDescription>This will mark the student as 'Terminated', unassign them from their class, and deactivate their login. This action is reversible.</AlertDialogDescription></AlertDialogHeader>
+                                    <AlertDialogFooter><AlertDialogCancel disabled={isSubmitting}>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => handleDeactivateStudent(student as Student)} disabled={isSubmitting} className="bg-destructive hover:bg-destructive/90">{isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}Deactivate</AlertDialogAction></AlertDialogFooter>
                                   </AlertDialogContent>
                               ) : (
                                   <AlertDialogContent>
@@ -410,7 +410,7 @@ export default function ManageStudentsPage() {
                   </Table>
                 ) : (
                   <p className="text-center text-muted-foreground py-4">
-                    {searchTerm ? "No students match your search." : (showTerminated ? "No terminated students found." : "No active students found for this school.")}
+                    {searchTerm ? "No students match your search." : (showTerminated ? "No deactivated students found." : "No active students found for this school.")}
                   </p>
                 )}
               </>

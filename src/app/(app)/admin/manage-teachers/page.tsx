@@ -11,10 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import type { Teacher } from '@/types'; 
 import { useState, useEffect, type FormEvent, type ChangeEvent, useMemo, useCallback } from 'react';
-import { PlusCircle, Edit2, Trash2, Search, Briefcase, UserPlus, Save, Loader2, FileDown, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit2, Trash2, Search, Briefcase, UserPlus, Save, Loader2, FileDown, MoreHorizontal, ChevronLeft, ChevronRight, UserX } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { createTeacherAction, updateTeacherAction, deleteTeacherAction, getAdminTeacherManagementPageDataAction } from './actions';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { createTeacherAction, updateTeacherAction, deleteTeacherAction, getAdminTeacherManagementPageDataAction, deactivateTeacherAction } from './actions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -141,18 +142,28 @@ export default function ManageTeachersPage() {
   
   const handleDeleteTeacher = async (teacher: Teacher) => { 
     if (!currentSchoolId || !currentAdminUserId) return;
-    if(confirm(`Are you sure you want to delete teacher ${teacher.name}? This will also remove their login access.`)) {
-      setIsSubmitting(true);
-      const result = await deleteTeacherAction(teacher.id, teacher.user_id, currentSchoolId);
-      if (result.ok) {
-        toast({ title: "Teacher Deleted", description: result.message, variant: "destructive" });
-        if(currentAdminUserId) fetchPageData(currentAdminUserId);
-      } else {
-        toast({ title: "Error", description: result.message, variant: "destructive" });
-      }
-      setIsSubmitting(false);
+    setIsSubmitting(true);
+    const result = await deleteTeacherAction(teacher.id, teacher.user_id, currentSchoolId);
+    toast({ title: result.ok ? "Teacher Deleted" : "Error", description: result.message, variant: result.ok ? "destructive" : "destructive" });
+    if (result.ok && currentAdminUserId) {
+      fetchPageData(currentAdminUserId);
     }
+    setIsSubmitting(false);
   };
+
+  const handleDeactivateTeacher = async (userId?: string) => {
+    if (!userId) {
+      toast({ title: "Error", description: "User ID not found for this teacher.", variant: "destructive" });
+      return;
+    }
+    setIsSubmitting(true);
+    const result = await deactivateTeacherAction(userId);
+    toast({ title: result.ok ? "Success" : "Error", description: result.message, variant: result.ok ? "default" : "destructive" });
+    if (result.ok && currentAdminUserId) {
+      fetchPageData(currentAdminUserId);
+    }
+    setIsSubmitting(false);
+  }
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>, type: 'create' | 'edit') => {
     const file = e.target.files?.[0];
@@ -303,21 +314,44 @@ export default function ManageTeachersPage() {
                     <TableCell>{teacher.email}</TableCell>
                     <TableCell>{teacher.subject}</TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleOpenEditDialog(teacher)}>
-                            <Edit2 className="mr-2 h-4 w-4" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleDeleteTeacher(teacher)} className="text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                       <AlertDialog>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" disabled={isSubmitting || isLoading}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => handleOpenEditDialog(teacher)}>
+                                <Edit2 className="mr-2 h-4 w-4" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                               <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">
+                                    <UserX className="mr-2 h-4 w-4" /> Deactivate Account
+                                </DropdownMenuItem>
+                               </AlertDialogTrigger>
+                               <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+                                </DropdownMenuItem>
+                              </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                           <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Do you want to deactivate or permanently delete {teacher.name}? Deactivation is reversible. Deletion is not and will fail if the teacher is still assigned to classes.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeactivateTeacher(teacher.user_id)}>Deactivate</AlertDialogAction>
+                              <AlertDialogAction onClick={() => handleDeleteTeacher(teacher)} className="bg-destructive hover:bg-destructive/90">Delete Permanently</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                     </TableCell>
                   </TableRow>
                 ))}

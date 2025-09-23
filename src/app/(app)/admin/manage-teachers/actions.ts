@@ -332,3 +332,24 @@ export async function deleteTeacherAction(
     return { ok: false, message: `An unexpected error occurred: ${error.message}` };
   }
 }
+
+export async function deactivateTeacherAction(userId: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = createSupabaseServerClient();
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ status: 'Inactive' })
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    revalidatePath('/admin/manage-teachers');
+    return { ok: true, message: 'Teacher account deactivated successfully.' };
+
+  } catch (error: any) {
+    console.error('Error deactivating teacher account:', error);
+    return { ok: false, message: `An unexpected error occurred: ${error.message}` };
+  }
+}

@@ -225,3 +225,24 @@ export async function deleteAccountantAction(
     return { ok: false, message: `An unexpected error occurred: ${error.message}` };
   }
 }
+
+export async function deactivateAccountantAction(userId: string): Promise<{ ok: boolean; message: string }> {
+  const supabase = createSupabaseServerClient();
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ status: 'Inactive' })
+      .eq('id', userId);
+
+    if (error) {
+      throw new Error(`Database error: ${error.message}`);
+    }
+    
+    revalidatePath('/admin/manage-accountants');
+    return { ok: true, message: 'Accountant account deactivated successfully.' };
+
+  } catch (error: any) {
+    console.error('Error deactivating accountant account:', error);
+    return { ok: false, message: `An unexpected error occurred: ${error.message}` };
+  }
+}
