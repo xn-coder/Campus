@@ -10,7 +10,7 @@ import { getAnnouncementsAction } from '@/app/(app)/communication/actions';
 interface DashboardData {
   // Student specific
   upcomingAssignmentsCount?: number;
-  feeStatus?: { isDefaulter: boolean; message: string };
+  feeStatus?: { isDefaulter: boolean; message: string; totalDue: number };
   // Teacher specific
   assignedClassesCount?: number;
   totalStudentsInClasses?: number;
@@ -69,7 +69,7 @@ export async function getSidebarCountsAction(userId: string, userRole: UserRole)
             case 'student':
                  const { data: student } = await supabase.from('students').select('id, school_id').eq('user_id', userId).single();
                  if(student) {
-                    const { count: feeCount } = await supabase.from('student_fee_payments').select('id', {count: 'exact', head: true}).eq('student_id', student.id).eq('status', 'Pending');
+                    const { count: feeCount } = await supabase.from('student_fee_payments').select('id', {count: 'exact', head: true}).eq('student_id', student.id).in('status', ['Pending', 'Overdue']);
                     sidebarCounts.pendingFeePayments = feeCount || 0;
                     isFeeDefaulter = (feeCount || 0) > 0;
                  }
@@ -133,9 +133,12 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
               const { count: assignmentCount } = await supabase.from('assignments').select('id', { count: 'exact', head: true }).eq('school_id', student.school_id).eq('class_id', student.class_id);
               dashboardData.upcomingAssignmentsCount = assignmentCount || 0;
 
-              const { count: pendingFees } = await supabase.from('student_fee_payments').select('id', { count: 'exact', head: true }).eq('student_id', student.id).eq('status', 'Pending');
-              if ((pendingFees || 0) > 0) {
-                dashboardData.feeStatus = { isDefaulter: true, message: `You have ${pendingFees} overdue fee payment(s).` };
+              const { data: pendingFees, error: feeError } = await supabase.from('student_fee_payments').select('assigned_amount, paid_amount').eq('student_id', student.id).in('status', ['Pending', 'Overdue']);
+              if (pendingFees && pendingFees.length > 0) {
+                const totalDue = pendingFees.reduce((acc, fee) => acc + (fee.assigned_amount - fee.paid_amount), 0);
+                if (totalDue > 0) {
+                    dashboardData.feeStatus = { isDefaulter: true, message: `You have ${pendingFees.length} fee payment(s) pending.`, totalDue };
+                }
               }
           }
           break;
@@ -157,12 +160,14 @@ export async function getDashboardDataAction(userId: string, userRole: UserRole)
       }
       case 'admin':
           if (schoolId) {
-              const [studentsRes, teachersRes, classesRes, feesRes, expensesRes] = await Promise.all([
+              const [studentsRes, teachersRes, classesRes, feesRes, expensesRes, leaveRes, tcRes] = await Promise.all([
                   supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Active'),
                   supabase.from('teachers').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
                   supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', schoolId),
                   supabase.from('student_fee_payments').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
-                  supabase.from('expenses').select('amount').eq('school_id', schoolId)
+                  supabase.from('expenses').select('amount').eq('school_id', schoolId),
+                  supabase.from('leave_applications').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
+                  supabase.from('tc_requests').select('id', { count: 'exact', head: true }).eq('school_id', schoolId).eq('status', 'Pending'),
               ]);
               
               dashboardData.totalSchoolStudents = studentsRes.count || 0;

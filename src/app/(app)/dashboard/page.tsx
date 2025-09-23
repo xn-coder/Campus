@@ -21,7 +21,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface DashboardStats {
   upcomingAssignmentsCount?: number;
-  feeStatus?: { isDefaulter: boolean; message: string };
+  feeStatus?: { isDefaulter: boolean; message: string; totalDue: number; };
   assignedClassesCount?: number;
   totalStudentsInClasses?: number;
   pendingLeaveRequestsCount?: number;
@@ -137,6 +137,9 @@ export default function DashboardPage() {
         return (
           <>
             <StatsCard title="Upcoming Assignments" value={dashboardData.upcomingAssignmentsCount ?? 0} icon={ClipboardList} />
+            {dashboardData.feeStatus?.isDefaulter && (
+              <StatsCard title="Total Dues" value={`₹${(dashboardData.feeStatus.totalDue ?? 0).toFixed(2)}`} icon={Wallet} />
+            )}
           </>
         );
       case 'teacher':
