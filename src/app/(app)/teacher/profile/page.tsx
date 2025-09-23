@@ -114,24 +114,6 @@ export default function TeacherProfilePage() {
     }
     setIsSubmitting(false);
   };
-
-  const handleDeactivate = async () => {
-    if (!userDetails?.id) {
-      toast({ title: "Error", description: "User ID not found.", variant: "destructive" });
-      return;
-    }
-    setIsSubmitting(true);
-    const result = await deactivateSelfAction(userDetails.id);
-    if (result.ok) {
-      toast({ title: "Account Deactivated", description: "You have been logged out." });
-      // Clear local storage and redirect to login
-      localStorage.clear();
-      router.push('/login');
-    } else {
-      toast({ title: "Error", description: result.message, variant: "destructive" });
-    }
-    setIsSubmitting(false);
-  };
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -200,23 +182,6 @@ export default function TeacherProfilePage() {
                     </form>
                 </DialogContent>
             </Dialog>
-             <AlertDialog>
-                <AlertDialogTrigger asChild><Button variant="destructive" className="w-full"><Trash2 className="mr-2 h-4 w-4"/> Deactivate Account</Button></AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action will deactivate your account and you will be logged out. You will not be able to log back in until an administrator reactivates your account.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeactivate} className="bg-destructive hover:bg-destructive/90">
-                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null} Deactivate
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
           </CardContent>
         </Card>
         <Card className="md:col-span-2">
