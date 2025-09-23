@@ -220,7 +220,7 @@ export default function StudentProfilePage() {
                     </div>
                     <div>
                         <Label htmlFor="editContactNumber">Your Contact Number</Label>
-                        <Input id="editContactNumber" type="tel" value={editContactNumber} onChange={(e) => setEditContactNumber(e.target.value)} disabled={isSubmitting}/>
+                        <Input id="editContactNumber" type="tel" value={editContactNumber} onChange={(e) => setEditContactNumber(e.target.value)} disabled readOnly title="Contact number can only be changed by an administrator."/>
                     </div>
                     <div>
                         <Label htmlFor="editBloodGroup">Blood Group</Label>
@@ -265,7 +265,7 @@ export default function StudentProfilePage() {
                         </div>
                         <div>
                             <Label htmlFor="editParentContactNumber">Parent/Guardian Contact</Label>
-                            <Input id="editParentContactNumber" type="tel" value={editParentContactNumber} onChange={(e) => setEditParentContactNumber(e.target.value)} disabled={isSubmitting}/>
+                            <Input id="editParentContactNumber" type="tel" value={editParentContactNumber} onChange={(e) => setEditParentContactNumber(e.target.value)} disabled readOnly title="Parent contact number can only be changed by an administrator."/>
                         </div>
                    </div>
 
