@@ -16,7 +16,13 @@ export async function getFavoriteCoursesAction(userId: string): Promise<{ ok: bo
             .select('course_id')
             .eq('user_id', userId);
 
-        if (error) throw error;
+        if (error) {
+            if (error.message.includes('relation "public.lms_user_favorite_courses" does not exist')) {
+                console.warn("Feature disabled: 'lms_user_favorite_courses' table not found.");
+                return { ok: true, courseIds: [], message: "Favorites feature is not available." };
+            }
+            throw error;
+        }
         return { ok: true, courseIds: data.map(item => item.course_id) };
     } catch (e: any) {
         console.error("Error fetching favorite courses:", e);
@@ -39,7 +45,14 @@ export async function toggleFavoriteCourseAction(userId: string, courseId: strin
             .eq('course_id', courseId)
             .maybeSingle();
 
-        if (checkError) throw new Error(`DB check failed: ${checkError.message}`);
+        if (checkError) {
+             if (checkError.message.includes('relation "public.lms_user_favorite_courses" does not exist')) {
+                console.warn("Feature disabled: 'lms_user_favorite_courses' table not found.");
+                return { ok: false, message: "Favorites feature is not available." };
+            }
+            throw new Error(`DB check failed: ${checkError.message}`);
+        }
+
 
         if (existing) {
             // It exists, so delete it
