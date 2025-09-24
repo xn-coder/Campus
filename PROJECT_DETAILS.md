@@ -5,95 +5,126 @@ This document provides a comprehensive overview of the CampusHub application, de
 
 ## 1. User Roles & Capabilities
 
-The application is built around a multi-tenant architecture with distinct roles, each having specific access and functionalities.
+The application is built around a multi-tenant architecture with distinct roles, each having specific access and functionalities as reflected in their sidebar navigation.
 
 ### 1.1 Super Admin (`superadmin`)
 The Super Admin has the highest level of control over the entire platform. Their primary responsibilities are managing schools and global course content.
 
+- **Dashboard**: A welcome page with high-level statistics like total number of schools and users.
 - **School Management**:
-  - **Create Schools**: Can register new schools on the platform, creating an associated Principal (Admin) account for each (`/superadmin/create-school`).
+  - **Create School**: Can register new schools on the platform, creating an associated Principal (Admin) account for each (`/superadmin/create-school`).
   - **Manage Schools**: Can view a list of all registered schools, edit their details (name, address), and change their status (Active/Inactive) (`/superadmin/manage-school`).
 - **Global LMS Management**:
-  - **Create & Manage Courses**: Can create globally available courses, define their pricing, and manage their content (`/superadmin/lms/courses`).
-  - **Assign Courses**: Can assign or make global courses available to specific schools.
+  - **LMS Courses**: Can create, edit, and delete globally available courses. This includes setting pricing, subscription models, adding lessons, and managing all course content (`/superadmin/lms/courses`).
+  - **LMS Reports**: Can view platform-wide reports on course enrollment and school assignment statistics (`/superadmin/lms/reports`).
 - **Global Announcements**: Can post announcements visible to all school administrators (`/communication`).
 
 ### 1.2 Admin / Principal (`admin`)
 The Admin is the primary manager of an individual school. They have wide-ranging permissions to manage all aspects of their school's operations.
 
+- **Dashboard**: An overview of school statistics like total students, teachers, and pending fee collections. Also shows recent announcements and upcoming events.
+- **School Details**: View and update the school's own information, including name, address, contact details, and logo (`/school-details`).
 - **User Management**:
-  - **Manage Students**: View, edit, and terminate student profiles. This is distinct from the initial admission process (`/admin/manage-students`).
+  - **Manage Students**: View, edit student profiles, and deactivate student accounts. This is distinct from the initial admission process (`/admin/manage-students`).
   - **Manage Teachers**: Create, view, edit, and deactivate teacher profiles and their associated login accounts (`/admin/manage-teachers`).
   - **Manage Accountants**: Create, view, edit, and deactivate accountant profiles and their login accounts (`/admin/manage-accountants`).
 - **Academic Configuration**:
-  - **Academic Years**: Define and manage academic years for the school (`/admin/academic-years`).
-  - **Class & Section Management**: Define class names (e.g., "Grade 10") and section names (e.g., "A"), then activate them as usable class-sections. Can assign teachers, subjects, and students to these activated classes (`/class-management`).
+  - **Class Management**: A central hub to define class names (e.g., "Grade 10") and section names (e.g., "A"), then activate them as usable class-sections. Can assign teachers, subjects, and students to these activated classes (`/class-management`).
+  - **Academic Years**: Define and manage academic years (e.g., "2024-2025") for the school (`/admin/academic-years`).
   - **Subjects**: Create and manage subjects offered by the school, optionally linking them to academic years (`/admin/subjects`).
   - **Exams**: Schedule examination events for the entire school or specific classes (`/admin/exams`).
+  - **Student Scores**: View a consolidated report of all student scores entered by teachers across different exams (`/admin/student-scores`).
+  - **Attendance Records**: Generate and view attendance reports for any class over a specified date range (`/admin/attendance`).
+  - **ID Card Printing**: Preview and print ID cards for all students in the school, with filtering by class (`/admin/id-card-printing`).
   - **Class Schedule**: Define the weekly timetable for classes, assigning subjects and teachers to specific time slots (`/admin/class-schedule`).
-- **Financial Management (Full Access)**:
-  - **Fees & Expenses**: Has full control over all fee configurations (categories, types, structures, installments) and expense tracking (`/admin/fees-management`, `/admin/expenses`, etc.).
-  - **Reporting**: Can view all financial and student dues reports.
+- **Financial Management**:
+  - **Fees Management**: A hub page linking to all fee-related configuration pages (`/admin/fees-management`). Sub-modules include:
+    - **Student Payouts**: Manually record fee payments for students.
+    - **Manage Fee Categories**: Define broad categories like "Tuition", "Transport".
+    - **Manage Fee Types**: Create specific fee variations, like 'Late Fee' or 'Annual Fee'.
+    - **Manage Special Fee Types**: Handle one-off charges like 'Event Fee'.
+    - **Manage Fee Type Groups**: Bundle fee types together for easier assignment.
+    - **Manage Installments**: Set up payment installment plans.
+    - **Manage Concessions**: Define and apply fee discounts.
+    - **Manage Fee Structures**: Design fee structures linking categories to classes.
+    - **Manage Expenses**: Track all school expenditures.
+    - **Receipt Vouchers**: Create vouchers for miscellaneous income.
+  - **Fee Reports**: A collection of detailed financial reports, such as:
+    - Daily & Headwise Collection Reports
+    - Dues Reports (Yearly, All Students, Monthly, Headwise, Installment-wise)
+    - Student-wise and Group-wise Fee Reports
+    - Transaction Reports (All, Class-wise, Online, etc.)
 - **Admissions**:
-  - **New Admissions**: Can admit new students, which creates their student profile and login credentials simultaneously (`/admin/admissions/new`).
-  - **View Records**: Can view and manage all admission records (`/admin/admissions`).
+  - **View Admissions**: View, search, and manage all admission records. Edit student details after admission (`/admin/admissions`).
+  - **New Admission**: Admit new students, which creates their student profile and login credentials simultaneously (`/admin/admissions/new`).
 - **LMS Management**:
-  - **Course Catalog**: Views courses made available by the Super Admin and can "enroll" the school to make them accessible (`/admin/lms/courses`).
-  - **User Enrollment**: Manages which students and teachers are enrolled in which course (`/admin/lms/courses/[courseId]/enrollments`).
+  - **LMS Courses**: Views courses made available by the Super Admin and can assign them to specific audiences within the school (e.g., all students, a specific class, all teachers) (`/admin/lms/courses`).
+  - **LMS Reports**: View school-specific reports on course enrollment and student completion progress (`/admin/lms/reports`).
 - **Communication & Events**:
   - **Announcements**: Can post announcements to the entire school, specific classes, or specific user roles (students/teachers) (`/communication`).
-  - **Calendar**: Can create, edit, and delete school-wide events on the calendar (`/calendar-events`).
+  - **Calendar & Events**: Can create, edit, and delete school-wide events on the calendar (`/calendar-events`).
 - **Leave & Certificate Management**:
   - **Leave Management**: Can view and approve/reject leave requests from all users (teachers, students, accountants) within the school (`/admin/leave-management`).
-    - **TC Requests**: Views a log of automatically issued Transfer Certificates (`/admin/tc-requests`).
+  - **TC Requests**: Views a log of automatically issued Transfer Certificates (`/admin/tc-requests`).
 
 ### 1.3 Teacher (`teacher`)
 Teachers manage the academic activities for the classes they are assigned to.
 
-- **Class & Student Management**:
-  - **My Classes**: View a list of classes they are assigned to and the students enrolled in each (`/teacher/my-classes`).
-  - **My Students**: View a consolidated roster of all students they teach (`/teacher/my-students`).
+- **Dashboard**: A personalized overview showing assigned classes, total students, and pending leave requests.
+- **My Profile**: View and edit their own limited profile information, like subject and profile picture (`/teacher/profile`).
+- **My Classes**: View a list of classes they are assigned to and the students enrolled in each (`/teacher/my-classes`).
+- **My Students**: View a consolidated roster of all students they teach (`/teacher/my-students`).
 - **Academic Tasks**:
-  - **Attendance**: Mark daily attendance for their assigned classes (`/teacher/attendance`).
-  - **Assignments**: Post and manage assignments for their classes (`/teacher/post-assignments`, `/teacher/assignment-history`).
-  - **Grading**: View student submissions for assignments and provide grades and feedback (`/teacher/grade-assignments`).
+  - **Class Attendance**: Mark daily attendance for their assigned classes (`/teacher/attendance`).
+  - **Post Assignments**: Create new assignments with descriptions, due dates, and attachments for their classes (`/teacher/post-assignments`).
+  - **Grade Assignments**: View student submissions for assignments and provide grades and feedback (`/teacher/grade-assignments`).
+  - **Assignment History**: View and manage all assignments they have previously posted (`/teacher/assignment-history`).
   - **Gradebook**: Enter student scores for exams in the subjects they teach (`/teacher/student-scores`).
-- **LMS**: Can enroll in and view courses made available to teachers by the admin.
+- **Reports**: View activity reports for the students they teach, including assignment submission counts and attendance percentages (`/teacher/reports`).
+- **LMS**: Can enroll in and view courses made available to teachers by the admin (`/lms/available-courses`).
 - **Communication**: Can post announcements targeted to the specific classes they teach (`/communication`).
 - **Personal Management**:
-  - **Profile**: Can view and edit their own limited profile information (`/teacher/profile`).
-  - **Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
+  - **Apply for Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
+  - **Student Leaves**: View and approve/reject leave requests from students in their assigned classes (`/teacher/leave-requests`).
+  - **ID Card Printing**: Preview and print ID cards for students in their assigned classes (`/teacher/id-card-printing`).
+  - **School Calendar**: View all school-wide events (`/calendar-events`).
 
 ### 1.4 Student (`student`)
 Students interact with the system to access academic information and perform personal tasks.
 
+- **Dashboard**: A personalized welcome screen showing key stats like upcoming assignments and fee payment status.
+- **My Profile**: Can view and edit their own limited profile information (`/student/my-profile`).
 - **Academics**:
-  - **Assignments**: View and submit assignments posted by their teachers (`/student/assignments`).
-  - **Scores**: View their report cards and exam scores (`/student/my-scores`).
-  - **Subjects**: View a list of subjects for their academic program (`/student/subjects`).
-  - **Attendance**: View their own attendance history (`/student/attendance-history`).
-- **LMS**: Can enroll in and view courses made available to them by the admin (`/lms/available-courses`).
+  - **My Subjects**: View a list of subjects for their academic program (`/student/subjects`).
+  - **My Assignments**: View and submit assignments posted by their teachers. They can upload files and see grades and feedback once given (`/student/assignments`).
+  - **My Scores**: View their report cards and exam scores for all subjects and terms (`/student/my-scores`).
+  - **My Attendance**: View their own detailed attendance history (`/student/attendance-history`).
+- **LMS**: Can enroll in and consume course content made available to them by the admin (`/lms/available-courses`).
 - **Financials**:
   - **Payment History**: View their complete fee payment history, including assigned fees, payments made, and outstanding dues (`/student/payment-history`).
 - **Personal Management**:
-  - **Profile**: Can view and edit their own limited profile information (`/student/my-profile`).
-  - **Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
-  - **Transfer Certificate**: Can request a Transfer Certificate, which is auto-approved if all fees are cleared (`/student/apply-tc`).
-- **Communication**: View announcements targeted to them, their class, or the whole school (`/communication`).
+  - **Apply for Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
+  - **Apply for TC**: Can request a Transfer Certificate, which is auto-approved and issued if all fees are cleared (`/student/apply-tc`).
+- **Communication & Events**:
+  - **View Announcements**: View announcements targeted to them, their class, or the whole school (`/communication`).
+  - **School Calendar**: View all school-wide events (`/calendar-events`).
 
 ### 1.5 Accountant (`accountant`)
 The Accountant role is focused on financial management and record-keeping, with read-only access to some student data.
 
+- **Dashboard**: A financial overview with key metrics.
 - **Financial Management**:
-  - **Student Fees**: Has full access to the "Student Payouts" page to record and manage fee payments (`/admin/student-fees`).
-  - **Fee Configuration**: Has access to all fee configuration pages (categories, types, structures, etc.) under the `/admin/fees-management` section. This allows them to set up and manage the school's entire fee system.
+  - **View Admissions**: Has read-only access to admission records to facilitate fee management (`/admin/admissions`). They cannot admit new students.
+  - **Fees Management**: Has access to all fee configuration pages (categories, types, structures, concessions, installments, etc.) under the `/admin/fees-management` section. This allows them to set up and manage the school's entire fee system.
+  - **Student Payouts**: Has full access to the "Student Payouts" page to record and manage fee payments (`/admin/student-fees`).
   - **Expense Management**: Can create, view, edit, and delete expense records and manage expense categories (`/admin/expenses`).
   - **Receipt Vouchers**: Can create and manage receipt vouchers for miscellaneous income (`/admin/receipts`).
-- **Reporting**: Can view all financial reports, including collection, dues, and transaction reports.
-- **Admissions**: Has read-only access to admission records to facilitate fee management (`/admin/admissions`). They cannot admit new students.
+- **Reporting**: Can view all financial reports, including collection, dues, and transaction reports under the `/admin/fees-management` section.
 - **Personal Management**:
-  - **Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
-- **Communication**: View announcements targeted to them or the whole school (`/communication`).
+  - **Apply for Leave**: Can apply for personal leave and view their own leave history (`/leave-application`).
+- **Communication & Events**:
+  - **Announcements**: View announcements targeted to them or the whole school (`/communication`).
+  - **Calendar & Events**: View all school-wide events (`/calendar-events`).
 
 ---
 
@@ -135,7 +166,6 @@ Home for all React components.
 
 - **`layout/`**: Components related to the overall page structure.
   - `app-layout.tsx`: The main layout component that includes the sidebar.
-  - `sidebar-nav.tsx`: Defines the navigation items for each user role. (Note: This logic is now inside `sidebar.tsx`).
 - **`shared/`**: Reusable components used across multiple pages (e.g., `PageHeader`, `IdCardPreview`).
 - **`ui/`**: Core UI components, mostly from `shadcn/ui`, such as `Button`, `Card`, `Input`, etc.
   - `sidebar.tsx`: A complex component that handles the entire sidebar logic, including collapsible state, mobile view (sheet), and dynamic rendering of navigation items based on user role.
@@ -165,7 +195,7 @@ Contains services that interact with external APIs.
 
 ### Authentication and Authorization
 - **Login**: Managed by `(auth)/login/page.tsx` and `actions.ts`. It uses `bcryptjs` to compare the provided password with the stored `password_hash`.
-- **Role-Based Access**: The user's role is stored in local storage upon login. The `Sidebar` component in `src/components/ui/sidebar.tsx` reads this role to render the appropriate navigation menu. Server actions and API routes should re-verify the user's role and permissions using their user ID for security.
+- **Role-Based Access**: The user's role is stored in local storage upon login. The `Sidebar` component in `src/components/ui/sidebar.tsx` reads this role to render the appropriate navigation menu. Server actions and API routes re-verify the user's role and permissions using their user ID for security.
 
 ### Fees & Expense Management (`/admin/...`)
 - This is a comprehensive module for financial tracking.
