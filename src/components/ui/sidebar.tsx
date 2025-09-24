@@ -888,8 +888,7 @@ const studentNavItems: NavItem[] = [
   { href: '/student/assignments', label: 'My Assignments', icon: ClipboardList, badgeId: 'pendingAssignments' }, 
   { href: '/student/my-scores', label: 'My Scores', icon: Award },
   { href: '/student/attendance-history', label: 'My Attendance', icon: ClipboardCheck },
-  { href: '/lms/available-courses', label: 'LMS Courses', icon: Library }, 
-  { href: '/student/lms/activate', label: 'Activate Course', icon: KeyRound },
+  { href: '/lms/available-courses', label: 'LMS Courses', icon: Library },
   { href: '/leave-application', label: 'Apply for Leave', icon: ClipboardEdit },
   { href: '/student/apply-tc', label: 'Apply for TC', icon: FileText },
   { href: '/student/payment-history', label: 'Payment History', icon: CreditCard, badgeId: 'pendingFeePayments' },
@@ -914,7 +913,6 @@ const lockedStudentFeatures = [
     '/student/assignments',
     '/student/my-scores',
     '/lms/available-courses',
-    '/student/lms/activate',
     '/leave-application',
     '/student/apply-tc',
 ];
