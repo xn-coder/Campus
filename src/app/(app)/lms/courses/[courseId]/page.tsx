@@ -194,6 +194,8 @@ function ViewCoursePageContent() {
   const lessons = course.resources.filter(r => r.type === 'note');
   const isAdminViewing = currentUserRole === 'admin' || currentUserRole === 'superadmin';
 
+  let previousResourceCompleted = true; // The first resource is always available.
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader 
@@ -238,7 +240,7 @@ function ViewCoursePageContent() {
                     value={openLessons}
                     onValueChange={setOpenLessons}
                 >
-                 {lessons.map((lesson, lessonIndex) => {
+                 {lessons.map((lesson) => {
                     const lessonContents: LessonContentResource[] = JSON.parse(lesson.url_or_content || '[]') as LessonContentResource[];
                     
                     return (
@@ -251,16 +253,29 @@ function ViewCoursePageContent() {
                             <AccordionContent className="px-4 pt-2 border-t">
                                <div className="space-y-2 py-2">
                                    {lessonContents.length > 0 ? lessonContents.map(res => {
+                                       const isUnlocked = previousResourceCompleted || isPreview || isAdminViewing;
+                                       const isCompleted = completedResources[res.id];
+                                       
+                                       // Update for the next item in the list
+                                       if (!isUnlocked) {
+                                            previousResourceCompleted = false;
+                                       } else {
+                                           previousResourceCompleted = isCompleted;
+                                       }
+                                       
+                                       const Wrapper = isUnlocked ? Link : 'div';
+                                       
                                        return (
-                                           <div key={res.id} className="flex items-center justify-between p-2 border rounded-lg hover:bg-muted/50 transition-colors">
-                                                <Link href={`/lms/courses/${courseId}/${res.id}${isPreview ? '?preview=true' : ''}`} className="flex-grow">
+                                           <div key={res.id} className={`flex items-center justify-between p-2 border rounded-lg transition-colors ${isUnlocked ? 'hover:bg-muted/50' : 'bg-muted/30 opacity-60 cursor-not-allowed'}`}>
+                                                <Wrapper href={isUnlocked ? `/lms/courses/${courseId}/${res.id}${isPreview ? '?preview=true' : ''}` : '#'} className="flex-grow">
                                                     <div className="flex items-center p-1 font-medium">
                                                         {getResourceIcon(res.type)}
                                                         <span>{res.title}</span>
                                                     </div>
-                                                </Link>
+                                                </Wrapper>
                                                 <div className="flex items-center space-x-2 pl-4 shrink-0">
-                                                    {!isPreview && completedResources[res.id] && (
+                                                    {!isUnlocked && <Lock className="h-5 w-5 text-muted-foreground" />}
+                                                    {!isPreview && isCompleted && (
                                                         <CheckCircle className="h-5 w-5 text-green-500" />
                                                     )}
                                                 </div>
