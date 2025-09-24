@@ -5,7 +5,7 @@ import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { Course, UserRole, CourseWithEnrollmentStatus } from '@/types';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Library, Lock, Unlock, Eye, BookCheck, Loader2, BookOpen, Settings, Star } from 'lucide-react';
 import Link from 'next/link';
@@ -80,6 +80,15 @@ export default function AvailableLmsCoursesPage() {
     fetchData();
   }, [fetchData]);
 
+  const sortedCourses = useMemo(() => {
+    return [...courses].sort((a, b) => {
+      const aIsFavorite = favoriteCourseIds.has(a.id);
+      const bIsFavorite = favoriteCourseIds.has(b.id);
+      if (aIsFavorite && !bIsFavorite) return -1;
+      if (!aIsFavorite && bIsFavorite) return 1;
+      return a.title.localeCompare(b.title); // Secondary sort by title
+    });
+  }, [courses, favoriteCourseIds]);
 
   const handleEnroll = async (courseId: string) => {
     if (!currentUserProfileId || !currentUserRole || (currentUserRole !== 'student' && currentUserRole !== 'teacher') || !currentSchoolId) {
@@ -151,7 +160,7 @@ export default function AvailableLmsCoursesPage() {
         <Card><CardContent className="pt-6 text-center text-muted-foreground">No LMS courses available to you at this time.</CardContent></Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {courses.map((course) => (
+          {sortedCourses.map((course) => (
             <Card key={course.id} className="flex flex-col overflow-hidden">
                <div className="relative aspect-video">
                   <Image 
