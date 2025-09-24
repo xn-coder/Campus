@@ -5,7 +5,7 @@
 import { useState, useEffect, type FormEvent, useMemo, useRef, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getCourseForViewingAction, checkUserEnrollmentForCourseViewAction, markResourceAsCompleteAction, getCompletionStatusAction } from '../actions';
-import type { LessonContentResource, QuizQuestion, Course, CourseResource, UserRole, DNDActivityData, CourseResourceType, WebPageContent } from '@/types';
+import type { LessonContentResource, QuizQuestion, Course, CourseResource, UserRole, DNDActivityData, CourseResourceType, WebPageSection, WebPageSectionType, WebPageTemplate, WebPageContent } from '@/types';
 import { Loader2, ArrowLeft, BookOpen, Video, FileText, Users, FileQuestion, ArrowRight, CheckCircle, Award, Presentation, Lock, Music, MousePointerSquareDashed, ListVideo, Clock, AlertTriangle, Code } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import PageHeader from '@/components/shared/page-header';
@@ -420,7 +420,7 @@ export default function CourseResourcePage() {
     const isNextDisabled = !nextResourceId || (isPreviewing ? false : (!isAdmin && !isCompleted));
     
     const backToCoursesPath = isAdmin
-        ? `/admin/lms/courses/${courseId}/content` 
+        ? (currentUserRole === 'superadmin' ? `/superadmin/lms/courses/${courseId}/content` : `/admin/lms/courses/${courseId}/content`)
         : '/lms/available-courses';
 
 
@@ -431,7 +431,7 @@ export default function CourseResourcePage() {
                 description={`Part of course: ${course.title}`}
                 actions={
                     <Button variant="outline" asChild>
-                        <Link href={isPreviewing ? `/admin/lms/courses/${courseId}/content` : `/lms/courses/${courseId}`}>
+                        <Link href={isPreviewing ? backToCoursesPath : `/lms/courses/${courseId}`}>
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Back to Course
                         </Link>
@@ -626,8 +626,8 @@ export default function CourseResourcePage() {
                     
                      <div className="flex-1 min-w-[150px] flex justify-end">
                         {nextResourceId && (
-                            <Button variant="outline" disabled={isNextDisabled} asChild className="w-full justify-end text-left">
-                                <Link href={!isNextDisabled ? `/lms/courses/${courseId}/${nextResourceId}${isPreviewing ? '?preview=true': ''}` : '#'} className="flex items-center">
+                            <Button variant="outline" disabled={isNextDisabled} asChild className="w-full justify-end text-left" title={isNextDisabled ? 'Please complete the current item to continue.' : ''}>
+                                <Link href={!isNextDisabled ? `/lms/courses/${courseId}/${nextResourceId}${isPreviewing ? '?preview=true': ''}` : '#'} className={`flex items-center ${isNextDisabled ? 'cursor-not-allowed' : ''}`}>
                                     <span className="truncate">Next: {nextResourceTitle}</span>
                                     <ArrowRight className="ml-2 h-4 w-4 shrink-0"/>
                                 </Link>
