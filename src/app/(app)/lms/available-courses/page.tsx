@@ -7,12 +7,15 @@ import { Button } from '@/components/ui/button';
 import type { Course, UserRole, CourseWithEnrollmentStatus } from '@/types';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { Library, Lock, Unlock, Eye, BookCheck, Loader2, BookOpen, Settings, Star } from 'lucide-react';
+import { Library, Lock, Unlock, Eye, BookCheck, Loader2, BookOpen, Settings, Star, Search } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getAvailableCoursesWithEnrollmentStatusAction, enrollUserInCourseAction, getLmsPageContextAction } from '@/app/(app)/lms/actions';
 import { toggleFavoriteCourseAction, getFavoriteCoursesAction } from '@/app/(app)/lms/favoritesActions';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 
 export default function AvailableLmsCoursesPage() {
@@ -25,6 +28,11 @@ export default function AvailableLmsCoursesPage() {
   const [currentUserRole, setCurrentUserRole] = useState<UserRole | null>(null);
   const [currentSchoolId, setCurrentSchoolId] = useState<string | null>(null);
   const [isEnrolling, setIsEnrolling] = useState<Record<string, boolean>>({});
+
+  // New state for filtering and searching
+  const [searchTerm, setSearchTerm] = useState('');
+  const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'not_enrolled'>('all');
+  const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'paid'>('all');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -80,15 +88,34 @@ export default function AvailableLmsCoursesPage() {
     fetchData();
   }, [fetchData]);
 
-  const sortedCourses = useMemo(() => {
-    return [...courses].sort((a, b) => {
-      const aIsFavorite = favoriteCourseIds.has(a.id);
-      const bIsFavorite = favoriteCourseIds.has(b.id);
-      if (aIsFavorite && !bIsFavorite) return -1;
-      if (!aIsFavorite && bIsFavorite) return 1;
-      return a.title.localeCompare(b.title); // Secondary sort by title
-    });
-  }, [courses, favoriteCourseIds]);
+  const sortedAndFilteredCourses = useMemo(() => {
+    return courses
+      .filter(course => {
+        // Search filter
+        const matchesSearch = searchTerm === '' ||
+          course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (course.description || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+        // Enrollment filter
+        const matchesEnrollment = enrollmentFilter === 'all' ||
+          (enrollmentFilter === 'enrolled' && course.isEnrolled) ||
+          (enrollmentFilter === 'not_enrolled' && !course.isEnrolled);
+
+        // Price filter
+        const matchesPrice = priceFilter === 'all' ||
+          (priceFilter === 'free' && !course.is_paid) ||
+          (priceFilter === 'paid' && course.is_paid);
+          
+        return matchesSearch && matchesEnrollment && matchesPrice;
+      })
+      .sort((a, b) => {
+        const aIsFavorite = favoriteCourseIds.has(a.id);
+        const bIsFavorite = favoriteCourseIds.has(b.id);
+        if (aIsFavorite && !bIsFavorite) return -1;
+        if (!aIsFavorite && bIsFavorite) return 1;
+        return a.title.localeCompare(b.title); // Secondary sort by title
+      });
+  }, [courses, favoriteCourseIds, searchTerm, enrollmentFilter, priceFilter]);
 
   const handleEnroll = async (courseId: string) => {
     if (!currentUserProfileId || !currentUserRole || (currentUserRole !== 'student' && currentUserRole !== 'teacher') || !currentSchoolId) {
@@ -154,13 +181,49 @@ export default function AvailableLmsCoursesPage() {
         title="Available LMS Courses"
         description="Browse and enroll in courses made available by your school."
       />
+      <Card>
+        <CardHeader>
+          <CardTitle>Filter & Search Courses</CardTitle>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="space-y-1.5">
+                <Label htmlFor="search-courses">Search</Label>
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input id="search-courses" placeholder="Search by title or description..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-8"/>
+                </div>
+            </div>
+            <div className="space-y-1.5">
+                <Label htmlFor="filter-enrollment">Enrollment Status</Label>
+                <Select value={enrollmentFilter} onValueChange={(val) => setEnrollmentFilter(val as any)}>
+                    <SelectTrigger id="filter-enrollment"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="enrolled">Enrolled</SelectItem>
+                        <SelectItem value="not_enrolled">Not Enrolled</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="space-y-1.5">
+                <Label htmlFor="filter-price">Price</Label>
+                <Select value={priceFilter} onValueChange={(val) => setPriceFilter(val as any)}>
+                    <SelectTrigger id="filter-price"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="paid">Paid</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+        </CardContent>
+      </Card>
       {isLoading ? (
         <Card><CardContent className="pt-6 text-center text-muted-foreground flex items-center justify-center"><Loader2 className="mr-2 h-6 w-6 animate-spin"/>Loading courses...</CardContent></Card>
-      ) : courses.length === 0 ? (
-        <Card><CardContent className="pt-6 text-center text-muted-foreground">No LMS courses available to you at this time.</CardContent></Card>
+      ) : sortedAndFilteredCourses.length === 0 ? (
+        <Card><CardContent className="pt-6 text-center text-muted-foreground">No LMS courses match your search criteria.</CardContent></Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedCourses.map((course) => (
+          {sortedAndFilteredCourses.map((course) => (
             <Card key={course.id} className="flex flex-col overflow-hidden">
                <div className="relative aspect-video">
                   <Image 
@@ -222,3 +285,4 @@ export default function AvailableLmsCoursesPage() {
     </div>
   );
 }
+
