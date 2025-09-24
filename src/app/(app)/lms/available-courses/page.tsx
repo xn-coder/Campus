@@ -32,7 +32,6 @@ export default function AvailableLmsCoursesPage() {
   // New state for filtering and searching
   const [searchTerm, setSearchTerm] = useState('');
   const [enrollmentFilter, setEnrollmentFilter] = useState<'all' | 'enrolled' | 'not_enrolled'>('all');
-  const [priceFilter, setPriceFilter] = useState<'all' | 'free' | 'paid'>('all');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -101,12 +100,7 @@ export default function AvailableLmsCoursesPage() {
           (enrollmentFilter === 'enrolled' && course.isEnrolled) ||
           (enrollmentFilter === 'not_enrolled' && !course.isEnrolled);
 
-        // Price filter
-        const matchesPrice = priceFilter === 'all' ||
-          (priceFilter === 'free' && !course.is_paid) ||
-          (priceFilter === 'paid' && course.is_paid);
-          
-        return matchesSearch && matchesEnrollment && matchesPrice;
+        return matchesSearch && matchesEnrollment;
       })
       .sort((a, b) => {
         const aIsFavorite = favoriteCourseIds.has(a.id);
@@ -115,7 +109,7 @@ export default function AvailableLmsCoursesPage() {
         if (!aIsFavorite && bIsFavorite) return 1;
         return a.title.localeCompare(b.title); // Secondary sort by title
       });
-  }, [courses, favoriteCourseIds, searchTerm, enrollmentFilter, priceFilter]);
+  }, [courses, favoriteCourseIds, searchTerm, enrollmentFilter]);
 
   const handleEnroll = async (courseId: string) => {
     if (!currentUserProfileId || !currentUserRole || (currentUserRole !== 'student' && currentUserRole !== 'teacher') || !currentSchoolId) {
@@ -204,17 +198,6 @@ export default function AvailableLmsCoursesPage() {
                     </SelectContent>
                 </Select>
             </div>
-            <div className="space-y-1.5">
-                <Label htmlFor="filter-price">Price</Label>
-                <Select value={priceFilter} onValueChange={(val) => setPriceFilter(val as any)}>
-                    <SelectTrigger id="filter-price"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All</SelectItem>
-                        <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="paid">Paid</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
         </CardContent>
       </Card>
       {isLoading ? (
@@ -285,4 +268,3 @@ export default function AvailableLmsCoursesPage() {
     </div>
   );
 }
-
