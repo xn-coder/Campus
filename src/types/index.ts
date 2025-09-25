@@ -455,9 +455,9 @@ export interface Course {
   description?: string | null;
   feature_image_url?: string | null;
   is_paid: boolean;
-  base_price?: number | null; // New
-  price_per_10_users?: number | null; // New
-  max_users_allowed?: number | null; // New: initial seats in base price
+  base_price?: number | null;
+  price_per_user?: number | null;
+  max_users_allowed?: number | null; // Initial seats included in base price
   currency?: 'INR' | 'USD' | 'EUR' | null;
   discount_percentage?: number | null;
   school_id?: string | null; // Null for global courses by superadmin

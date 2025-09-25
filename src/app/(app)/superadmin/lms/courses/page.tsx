@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -54,7 +55,7 @@ export default function SuperAdminManageCoursesPage() {
   const [featureImageFile, setFeatureImageFile] = useState<File | null>(null);
   const [subscriptionPlan, setSubscriptionPlan] = useState<SubscriptionPlan>('free');
   const [basePrice, setBasePrice] = useState<number | ''>('');
-  const [pricePer10Users, setPricePer10Users] = useState<number | ''>('');
+  const [pricePerUser, setPricePerUser] = useState<number | ''>('');
   const [discountPercentage, setDiscountPercentage] = useState<number | ''>('');
   const [maxUsersAllowed, setMaxUsersAllowed] = useState<number | ''>('');
   
@@ -91,7 +92,7 @@ export default function SuperAdminManageCoursesPage() {
     setFeatureImageFile(null);
     setSubscriptionPlan('free');
     setBasePrice('');
-    setPricePer10Users('');
+    setPricePerUser('');
     setDiscountPercentage('');
     setMaxUsersAllowed('');
     setEditingCourse(null);
@@ -105,7 +106,7 @@ export default function SuperAdminManageCoursesPage() {
       setFeatureImageFile(null);
       setSubscriptionPlan(course.subscription_plan || 'free');
       setBasePrice(course.base_price ?? '');
-      setPricePer10Users(course.price_per_10_users ?? '');
+      setPricePerUser(course.price_per_user ?? '');
       setMaxUsersAllowed(course.max_users_allowed ?? '');
       setDiscountPercentage(course.discount_percentage ?? '');
     } else {
@@ -140,7 +141,7 @@ export default function SuperAdminManageCoursesPage() {
     formData.append('created_by_user_id', currentAdminUserId);
     formData.append('is_paid', String(isPaid));
     formData.append('base_price', String(isPaid ? basePrice || 0 : 0));
-    formData.append('price_per_10_users', String(isPaid ? pricePer10Users || 0 : 0));
+    formData.append('price_per_user', String(isPaid ? pricePerUser || 0 : 0));
     formData.append('max_users_allowed', String(isPaid ? maxUsersAllowed || 0 : 0));
     formData.append('discount_percentage', String(isPaid ? discountPercentage || 0 : 0));
     formData.append('subscription_plan', subscriptionPlan);
@@ -225,12 +226,12 @@ export default function SuperAdminManageCoursesPage() {
     if (!course.is_paid) return <span>Free</span>;
 
     const base = course.base_price || 0;
-    const perBundle = course.price_per_10_users || 0;
+    const perUser = course.price_per_user || 0;
 
     return (
       <div className="flex flex-col font-mono text-xs">
           <span>Base: ₹{base.toFixed(2)}</span>
-          <span>Per 10 Users: ₹{perBundle.toFixed(2)}</span>
+          <span>Per User: ₹{perUser.toFixed(2)}</span>
       </div>
     );
   };
@@ -394,8 +395,8 @@ export default function SuperAdminManageCoursesPage() {
                     <Input id="basePrice" type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 2999" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
                   </div>
                  <div>
-                    <Label htmlFor="pricePer10Users" className="font-mono">Price per 10 Users (₹)</Label>
-                    <Input id="pricePer10Users" type="number" value={pricePer10Users} onChange={(e) => setPricePer10Users(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 999" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
+                    <Label htmlFor="pricePerUser" className="font-mono">Price per User (₹)</Label>
+                    <Input id="pricePerUser" type="number" value={pricePerUser} onChange={(e) => setPricePerUser(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 99" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
                   </div>
               </div>
               <div className="grid grid-cols-2 gap-4">

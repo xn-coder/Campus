@@ -55,7 +55,7 @@ export default function SchoolLmsCoursesPage() {
   const [assignTargetClassId, setAssignTargetClassId] = useState<string>('');
   
   const [isSubscribeDialogOpen, setIsSubscribeDialogOpen] = useState(false);
-  const [seatsToPurchase, setSeatsToPurchase] = useState<number>(1);
+  const [seatsToPurchase, setSeatsToPurchase] = useState<number>(10);
   const [shouldExtend, setShouldExtend] = useState(false);
 
 
@@ -89,7 +89,7 @@ export default function SchoolLmsCoursesPage() {
   
   const handleOpenSubscribeDialog = (course: Course) => {
     setCourseToAction(course);
-    setSeatsToPurchase(1);
+    setSeatsToPurchase(10);
     setShouldExtend(false);
     setIsSubscribeDialogOpen(true);
   };
@@ -137,13 +137,13 @@ export default function SchoolLmsCoursesPage() {
     if (!courseToAction || !currentSchool || !currentUserId) return;
     setIsSubmitting(true);
     
-    const amount = ((courseToAction.price_per_10_users || 0) * seatsToPurchase) + (shouldExtend ? (courseToAction.base_price || 0) : 0);
+    const amount = ((courseToAction.price_per_user || 0) * seatsToPurchase) + (shouldExtend ? (courseToAction.base_price || 0) : 0);
 
     const result = await createSchoolSubscriptionOrderAction({
       courseId: courseToAction.id,
       schoolId: currentSchool.id,
       amount: amount,
-      userCount: seatsToPurchase * 10,
+      userCount: seatsToPurchase,
       shouldExtend: shouldExtend
     });
 
@@ -415,11 +415,11 @@ export default function SchoolLmsCoursesPage() {
                 <div className="grid grid-cols-2 gap-4 items-center">
                     <p>Initial seats included:</p>
                     <p className="font-bold text-lg">{courseToAction?.max_users_allowed ?? 0}</p>
-                    <p>Price per 10 users:</p>
-                    <p className="font-bold text-lg font-mono">₹{(courseToAction?.price_per_10_users ?? 0).toFixed(2)}</p>
+                    <p>Price per additional user:</p>
+                    <p className="font-bold text-lg font-mono">₹{(courseToAction?.price_per_user ?? 0).toFixed(2)}</p>
                 </div>
                  <div>
-                    <Label htmlFor="seatsToPurchase">Number of User Bundles (x10) to Add:</Label>
+                    <Label htmlFor="seatsToPurchase">Number of User Seats to Add:</Label>
                     <Input id="seatsToPurchase" type="number" min="1" value={seatsToPurchase} onChange={(e) => setSeatsToPurchase(Number(e.target.value))} />
                 </div>
                 <div className="flex items-center space-x-2">
@@ -431,7 +431,7 @@ export default function SchoolLmsCoursesPage() {
                     <p className="text-muted-foreground">Total Additional Cost</p>
                     <p className="text-2xl font-bold font-mono">
                         ₹
-                        {((courseToAction?.price_per_10_users ?? 0) * seatsToPurchase + (shouldExtend ? courseToAction?.base_price ?? 0 : 0)).toFixed(2)}
+                        {((courseToAction?.price_per_user ?? 0) * seatsToPurchase + (shouldExtend ? courseToAction?.base_price ?? 0 : 0)).toFixed(2)}
                     </p>
                 </div>
             </div>

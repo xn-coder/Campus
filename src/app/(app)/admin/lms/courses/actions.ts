@@ -850,7 +850,7 @@ export async function createCoursePaymentOrderAction(courseId: string, userId: s
     
     // For school admins, payment is handled differently (subscribing the school)
     if(userRole === 'admin' || userRole === 'superadmin') {
-      const { data: courseData } = await supabase.from('lms_courses').select('id, base_price, price_per_10_users').eq('id', courseId).single();
+      const { data: courseData } = await supabase.from('lms_courses').select('id, base_price, price_per_user').eq('id', courseId).single();
       const finalPrice = courseData?.base_price || 0;
       return createSchoolSubscriptionOrderAction({courseId, schoolId: user.school_id!, amount: finalPrice, shouldExtend: false});
     }
