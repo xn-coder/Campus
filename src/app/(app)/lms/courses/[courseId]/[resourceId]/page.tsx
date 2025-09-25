@@ -53,6 +53,11 @@ const getEmbedUrl = (url: string, type: CourseResourceType): string | null => {
             const presentationId = url.split('/d/')[1]?.split('/')[0];
             return `https://docs.google.com/presentation/d/${presentationId}/embed?start=false&loop=false&delayms=3000`;
         }
+        
+        // New: Handle uploaded PPT/PPTX files using Google Docs viewer
+        if (type === 'ppt' && (url.endsWith('.ppt') || url.endsWith('.pptx'))) {
+            return `https://docs.google.com/gview?url=${encodeURIComponent(url)}&embedded=true`;
+        }
 
         if ((type === 'ebook' || type === 'ppt') && url.includes("drive.google.com/file/d/")) {
             const fileId = url.split('/d/')[1]?.split('/')[0];
