@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -237,13 +236,19 @@ export default function AvailableLmsCoursesPage() {
                 <CardDescription className="line-clamp-3 flex-grow">{course.description || "No description available."}</CardDescription>
                 
                 {course.isEnrolled && typeof course.progress === 'number' && (
-                  <div className="mt-4 space-y-1">
-                    <div className="flex justify-between items-center text-xs text-muted-foreground">
-                      <span>Progress</span>
-                      <span>{course.progress}%</span>
-                    </div>
-                    <Progress value={course.progress} className="h-2" />
-                  </div>
+                    course.progress === 100 ? (
+                        <div className="mt-4">
+                            <Badge variant="default" className="w-full justify-center bg-green-600 hover:bg-green-700">Completed</Badge>
+                        </div>
+                    ) : (
+                        <div className="mt-4 space-y-1">
+                            <div className="flex justify-between items-center text-xs text-muted-foreground">
+                            <span>Progress</span>
+                            <span>{course.progress}%</span>
+                            </div>
+                            <Progress value={course.progress} className="h-2" />
+                        </div>
+                    )
                 )}
 
                 <CardFooter className="p-0 pt-4 flex-col sm:flex-row gap-2">
