@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, type FormEvent, useMemo, useRef, useCallback } from 'react';
@@ -529,8 +528,7 @@ export default function CourseResourcePage() {
                         </div>
                      )}
                      {resource.type === 'note' && (
-                        <HTMLFlipBook width={550} height={733} showCover={true} className="mx-auto">
-                            <div className="p-4 bg-background border-r"></div>
+                        <HTMLFlipBook width={550} height={733} showCover={false} className="mx-auto">
                             {notePages.map((page, index) => (
                                 <div key={index} className="p-4 bg-background border-r">
                                     <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: page }}/>
@@ -645,3 +643,5 @@ export default function CourseResourcePage() {
         </div>
     );
 }
+
+    
