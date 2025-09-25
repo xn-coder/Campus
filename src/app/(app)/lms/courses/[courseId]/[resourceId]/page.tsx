@@ -530,6 +530,7 @@ export default function CourseResourcePage() {
                      )}
                      {resource.type === 'note' && (
                         <HTMLFlipBook width={550} height={733} showCover={true} className="mx-auto">
+                            <div className="p-4 bg-background border-r"></div>
                             {notePages.map((page, index) => (
                                 <div key={index} className="p-4 bg-background border-r">
                                     <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: page }}/>
