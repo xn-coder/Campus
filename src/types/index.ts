@@ -709,3 +709,4 @@ declare global {
     Razorpay: new (options: any) => any;
   }
 }
+
