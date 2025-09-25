@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -16,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 
 
 export default function AvailableLmsCoursesPage() {
@@ -72,6 +74,7 @@ export default function AvailableLmsCoursesPage() {
         userProfileId: userProfileIdToFetch,
         userRole: userRoleToFetch,
         userSchoolId: userSchoolIdToFetch,
+        userId: uIdToFetch
     });
 
     if (result.ok && result.courses) {
@@ -233,6 +236,16 @@ export default function AvailableLmsCoursesPage() {
                 <CardTitle className="flex items-center mb-2"><Library className="mr-2 h-5 w-5 text-primary shrink-0" />{course.title}</CardTitle>
                 <CardDescription className="line-clamp-3 flex-grow">{course.description || "No description available."}</CardDescription>
                 
+                {course.isEnrolled && typeof course.progress === 'number' && (
+                  <div className="mt-4 space-y-1">
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                      <span>Progress</span>
+                      <span>{course.progress}%</span>
+                    </div>
+                    <Progress value={course.progress} className="h-2" />
+                  </div>
+                )}
+
                 <CardFooter className="p-0 pt-4 flex-col sm:flex-row gap-2">
                   {canEnroll && course.isEnrolled ? (
                      <Button asChild className="w-full" variant="secondary">

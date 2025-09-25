@@ -4,7 +4,7 @@
 
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
 import { revalidatePath } from 'next/cache';
-import type { Course, CourseWithEnrollmentStatus, UserRole } from '@/types';
+import type { Course, CourseWithEnrollmentStatus, UserRole, CourseResource, LessonContentResource } from '@/types';
 
 
 export async function getLmsPageContextAction(
@@ -54,10 +54,11 @@ export async function getAvailableCoursesWithEnrollmentStatusAction(
     userProfileId: string | null;
     userRole: UserRole | null;
     userSchoolId: string | null;
+    userId: string | null;
   }
 ): Promise<{ ok: boolean; courses?: CourseWithEnrollmentStatus[]; message?: string }> {
   const supabase = createSupabaseServerClient();
-  const { userProfileId, userRole, userSchoolId } = input;
+  const { userProfileId, userRole, userSchoolId, userId } = input;
 
   if (!userRole) {
     return { ok: false, message: "User role not provided." };
@@ -67,7 +68,7 @@ export async function getAvailableCoursesWithEnrollmentStatusAction(
   }
 
   try {
-    let courseQuery = supabase.from('lms_courses').select('*');
+    let courseQuery = supabase.from('lms_courses').select('*, resources:lms_course_resources(*)');
     
     // Non-superadmins only see courses available to their school or global courses.
     if (userRole !== 'superadmin') {
@@ -150,11 +151,46 @@ export async function getAvailableCoursesWithEnrollmentStatusAction(
         enrolledCourseIds = schoolAssignments?.map(s => s.course_id) || [];
     }
 
-    // Finally, combine course data with enrollment status.
-    const coursesWithStatus: CourseWithEnrollmentStatus[] = coursesData.map(course => ({
-      ...course,
-      isEnrolled: enrolledCourseIds.includes(course.id),
-    }));
+    let completionData: Record<string, boolean> = {};
+    if (userRole === 'student' || userRole === 'teacher') {
+        const {data: completions, error: completionError} = await supabase
+          .from('lms_completion')
+          .select('resource_id')
+          .eq('user_profile_id', userProfileId!);
+        if (completionError) {
+            console.warn(`Could not fetch completions: ${completionError.message}`);
+        } else {
+            completionData = (completions || []).reduce((acc, item) => {
+                acc[item.resource_id] = true;
+                return acc;
+            }, {} as Record<string, boolean>);
+        }
+    }
+
+
+    // Finally, combine course data with enrollment status and progress
+    const coursesWithStatus: CourseWithEnrollmentStatus[] = coursesData.map(course => {
+        const isEnrolled = enrolledCourseIds.includes(course.id);
+        
+        let progress = 0;
+        if (isEnrolled) {
+            const lessons = (course.resources || []).filter((r: any) => r.type === 'note');
+            const allLessonContents = lessons.flatMap((lesson: any) => {
+                try { return JSON.parse(lesson.url_or_content || '[]') as LessonContentResource[]; } catch { return []; }
+            });
+
+            if (allLessonContents.length > 0) {
+                const completedCount = allLessonContents.filter(res => completionData[res.id]).length;
+                progress = Math.round((completedCount / allLessonContents.length) * 100);
+            }
+        }
+
+        return {
+          ...course,
+          isEnrolled,
+          progress,
+        };
+    });
     
     return { ok: true, courses: coursesWithStatus };
 

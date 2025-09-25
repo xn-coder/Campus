@@ -472,6 +472,7 @@ export interface CourseWithEnrollmentStatus extends Course {
   target_audience_in_school?: 'student' | 'teacher' | 'both';
   subscription_end_date?: string | null;
   subscribed_users_count?: number;
+  progress?: number;
 }
 
 
@@ -709,4 +710,3 @@ declare global {
     Razorpay: new (options: any) => any;
   }
 }
-
