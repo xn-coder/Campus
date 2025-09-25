@@ -475,13 +475,6 @@ export default function CourseResourcePage() {
                                   <CheckCircle className="mr-2 h-4 w-4" />
                                   {isCompleted ? "Completed" : "Mark as Completed"}
                               </Button>
-                              {isCompleted && (currentUserRole === 'student' || currentUserRole === 'teacher') && (
-                                  <Button asChild size="sm">
-                                      <Link href={`/lms/courses/${courseId}/certificate?studentName=${encodeURIComponent(currentStudentName)}&courseName=${encodeURIComponent(resource.title)}&schoolName=${encodeURIComponent(currentSchoolName)}&completionDate=${new Date().toISOString()}&certificateId=${uuidv4()}`}>
-                                          <Award className="mr-2 h-4 w-4" /> Get Certificate
-                                      </Link>
-                                  </Button>
-                              )}
                           </div>
                         )}
                     </div>
@@ -643,5 +636,3 @@ export default function CourseResourcePage() {
         </div>
     );
 }
-
-    

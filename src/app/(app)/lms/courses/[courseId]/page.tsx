@@ -219,7 +219,7 @@ function ViewCoursePageContent() {
                 <CardFooter>
                      <Button asChild>
                         <Link href={`/lms/courses/${courseId}/certificate?studentName=${encodeURIComponent(currentStudentName)}&courseName=${encodeURIComponent(course.title)}&schoolName=${encodeURIComponent(currentSchoolName)}&completionDate=${new Date().toISOString()}&certificateId=${uuidv4()}`}>
-                            <Award className="mr-2 h-4 w-4" /> Generate Certificate
+                            <Award className="mr-2 h-4 w-4" /> Generate Course Certificate
                         </Link>
                     </Button>
                 </CardFooter>
@@ -242,7 +242,8 @@ function ViewCoursePageContent() {
                 >
                  {lessons.map((lesson) => {
                     const lessonContents: LessonContentResource[] = JSON.parse(lesson.url_or_content || '[]') as LessonContentResource[];
-                    
+                    const areAllContentsComplete = !isPreview && lessonContents.length > 0 && lessonContents.every(res => completedResources[res.id]);
+
                     return (
                         <AccordionItem value={lesson.id} key={lesson.id} className="border rounded-md">
                             <AccordionTrigger className={`px-4 hover:no-underline font-semibold text-lg`}>
@@ -283,6 +284,15 @@ function ViewCoursePageContent() {
                                        );
                                    }) : <p className="text-sm text-muted-foreground text-center py-2">This lesson is empty.</p>}
                                </div>
+                               {areAllContentsComplete && (
+                                    <div className="pt-4 border-t text-center">
+                                        <Button asChild size="sm">
+                                            <Link href={`/lms/courses/${courseId}/certificate?studentName=${encodeURIComponent(currentStudentName)}&courseName=${encodeURIComponent(lesson.title)}&schoolName=${encodeURIComponent(currentSchoolName)}&completionDate=${new Date().toISOString()}&certificateId=${uuidv4()}`}>
+                                                <Award className="mr-2 h-4 w-4" /> Generate Lesson Certificate
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                )}
                             </AccordionContent>
                         </AccordionItem>
                     )
