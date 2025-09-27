@@ -833,6 +833,7 @@ const superAdminNavItems: NavItem[] = [
   { href: '/superadmin/create-school', label: 'Create School', icon: Building },
   { href: '/superadmin/manage-school', label: 'Manage Schools', icon: Settings },
   { href: '/superadmin/lms/courses', label: 'LMS Courses', icon: Library },
+  { href: '/superadmin/lms/certificate-templates', label: 'Certificate Templates', icon: Award },
   { href: '/superadmin/lms/reports', label: 'LMS Reports', icon: BarChart3 },
   { href: '/communication', label: 'Announcements', icon: Megaphone }, 
 ];
