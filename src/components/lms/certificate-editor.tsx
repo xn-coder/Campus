@@ -211,10 +211,12 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
       <div className="md:col-span-2">
         <Card>
           <CardHeader><CardTitle>Certificate Preview</CardTitle></CardHeader>
-          <CardContent className="flex justify-center items-center p-4 bg-muted">
+          <CardContent className="p-4 bg-muted overflow-auto">
             <div
-              className="relative w-full aspect-[1123/794] bg-white shadow-lg overflow-hidden"
+              className="relative bg-white shadow-lg"
               style={{
+                width: '1123px',
+                height: '794px',
                 backgroundImage: `url(${backgroundImagePreview})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
