@@ -704,6 +704,29 @@ export interface PaymentMethod {
   updated_at?: string;
 }
 
+export interface CertificateElement {
+  id: string;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  fontSize: number;
+  fontFamily: string;
+  color: string;
+  align: 'left' | 'center' | 'right';
+}
+
+export interface CertificateTemplate {
+  id: string;
+  template_type: string; // e.g., 'student_course_completion'
+  background_image_url?: string | null;
+  elements: CertificateElement[];
+  school_id?: string | null; // For school-specific templates
+  created_at: string;
+  updated_at: string;
+}
+
 
 declare global {
   interface Window {
