@@ -37,6 +37,7 @@ const defaultTemplate: Partial<CertificateTemplate> = {
     { id: 'el_signature_label', content: 'Signature', x: 650, y: 500, width: 150, height: 20, fontSize: 14, fontFamily: 'sans-serif', color: '#555555', align: 'center' },
   ],
   background_image_url: null,
+  orientation: 'landscape',
 };
 
 
@@ -47,7 +48,7 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
   placeholderVariables
 }) => {
   const { toast } = useToast();
-  const [template, setTemplate] = useState<Partial<CertificateTemplate>>({ elements: [] });
+  const [template, setTemplate] = useState<Partial<CertificateTemplate>>({ elements: [], orientation: 'landscape' });
   const [backgroundImageFile, setBackgroundImageFile] = useState<File | null>(null);
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -57,10 +58,9 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
     setIsLoading(true);
     const result = await getTemplateAction(templateType);
     if (result.ok && result.template) {
-      setTemplate(result.template);
+      setTemplate({ ...defaultTemplate, ...result.template });
       setBackgroundImagePreview(result.template.background_image_url || null);
     } else if (result.ok && !result.template) {
-      // If there's no template in the DB, use the default one.
       setTemplate(defaultTemplate);
       setBackgroundImagePreview(null);
     } else if (!result.ok) {
@@ -133,6 +133,8 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
     { label: "Cursive (Brush Script)", value: "cursive" },
     { label: "Monospace (Courier)", value: "monospace" },
   ];
+  
+  const isLandscape = template.orientation === 'landscape';
 
   if (isLoading) {
     return <Card><CardContent className="pt-6 text-center"><Loader2 className="h-8 w-8 animate-spin" /></CardContent></Card>
@@ -143,9 +145,24 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
       <Card className="md:col-span-1">
         <CardHeader><CardTitle>Template Settings</CardTitle></CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <Label>Background Image (Recommended: 1123x794px)</Label>
-            <Input type="file" accept="image/png, image/jpeg" onChange={handleFileChange} />
+          <div className="space-y-4">
+            <div>
+              <Label>Orientation</Label>
+              <Select 
+                value={template.orientation || 'landscape'} 
+                onValueChange={(val) => setTemplate(prev => ({...prev, orientation: val as 'portrait' | 'landscape'}))}
+              >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="landscape">Landscape</SelectItem>
+                      <SelectItem value="portrait">Portrait</SelectItem>
+                  </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Background Image (Recommended: {isLandscape ? '1123x794px' : '794x1123px'})</Label>
+              <Input type="file" accept="image/png, image/jpeg" onChange={handleFileChange} />
+            </div>
           </div>
           <Separator />
           <div>
@@ -213,10 +230,10 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
           <CardHeader><CardTitle>Certificate Preview</CardTitle></CardHeader>
           <CardContent className="p-4 bg-muted overflow-auto">
             <div
-              className="relative bg-white shadow-lg"
+              className="relative bg-white shadow-lg mx-auto"
               style={{
-                width: '1123px',
-                height: '794px',
+                width: isLandscape ? '1123px' : '794px',
+                height: isLandscape ? '794px' : '1123px',
                 backgroundImage: `url(${backgroundImagePreview})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',

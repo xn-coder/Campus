@@ -722,6 +722,7 @@ export interface CertificateTemplate {
   template_type: string; // e.g., 'student_course_completion'
   background_image_url?: string | null;
   elements: CertificateElement[];
+  orientation?: 'portrait' | 'landscape';
   school_id?: string | null; // For school-specific templates
   created_at: string;
   updated_at: string;
