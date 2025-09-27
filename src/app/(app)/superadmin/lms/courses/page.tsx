@@ -132,7 +132,8 @@ export default function SuperAdminManageCoursesPage() {
       };
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(null);
+      // If no file is selected (e.g., user clears selection), revert to original image if editing
+      setImagePreview(editingCourse?.feature_image_url || null);
     }
   };
 
