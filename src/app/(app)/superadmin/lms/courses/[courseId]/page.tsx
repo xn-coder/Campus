@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, type FormEvent, useRef } from 'react';
@@ -8,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import Editor from '@/components/shared/ck-editor';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -21,9 +23,10 @@ import {
   addLessonToCourseAction,
   deleteCourseResourceAction,
   updateResourceInLessonAction,
-  createSignedUploadUrlAction,
+  createSignedUploadUrlAction, 
   addResourceToLessonAction,
 } from '@/app/(app)/admin/lms/courses/actions';
+import { supabase } from '@/lib/supabaseClient';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -129,7 +132,7 @@ export default function ManageCourseContentPage() {
   };
   
   const handleDeleteResource = async (lesson: CourseResource, resourceId: string) => {
-     if (!confirm("Are you sure you want to delete this resource? This cannot be undone.")) return;
+     if (!confirm("Are you sure you want to delete this topic? This cannot be undone.")) return;
      
      setIsSubmitting(true);
      const currentContent: LessonContentResource[] = JSON.parse(lesson.url_or_content || '[]') as LessonContentResource[];
@@ -138,7 +141,7 @@ export default function ManageCourseContentPage() {
      const result = await deleteCourseResourceAction(lesson.id, updatedContent);
 
      if (result.ok) {
-        toast({title: "Resource Deleted", variant: "destructive"});
+        toast({title: "Topic Deleted", variant: "destructive"});
         await fetchCourseData();
      } else {
         toast({title: "Error", description: result.message, variant: "destructive"});
@@ -210,18 +213,18 @@ export default function ManageCourseContentPage() {
   const handleResourceSubmit = async (e: FormEvent, lesson: CourseResource) => {
     e.preventDefault();
     if (!resourceTitle.trim()) {
-      toast({title: "Error", description: "Resource title is required.", variant: "destructive"});
+      toast({title: "Error", description: "Topic title is required.", variant: "destructive"});
       return;
     }
     
     // --- Validation Section ---
     const isFileRequired = ['video', 'ebook', 'ppt', 'audio'].includes(resourceType);
     if (isFileRequired && !resourceFile && !resourceUrlOrContent.trim()) {
-      toast({ title: "Error", description: "A file upload or a URL is required for this resource type.", variant: "destructive" });
+      toast({ title: "Error", description: "A file upload or a URL is required for this topic type.", variant: "destructive" });
       return;
     }
     if ((resourceType === 'webinar' || resourceType === 'youtube_playlist') && !resourceUrlOrContent.trim()){
-      toast({ title: "Error", description: "Content is required for this resource type.", variant: "destructive" });
+      toast({ title: "Error", description: "Content is required for this topic type.", variant: "destructive" });
       return;
     }
     if (resourceType === 'quiz' && (quizQuestions.some(q => !q.question.trim() || q.options.some(o => !o.trim())) || quizQuestions.some(q => q.correctAnswers.length === 0)) ) {
@@ -350,7 +353,7 @@ export default function ManageCourseContentPage() {
 
 
       if (result.ok) {
-          toast({title: editingResource ? "Resource Updated" : "Resource Added"});
+          toast({title: editingResource ? "Topic Updated" : "Topic Added"});
           setIsResourceFormOpen(null);
           setEditingResource(null);
           resourceFormRef.current?.reset();
@@ -547,12 +550,12 @@ export default function ManageCourseContentPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={`Manage Content: ${course.title}`} description={isSuperAdmin ? "Add lessons and organize your course resources." : "Preview of the course structure."} />
+      <PageHeader title={`Manage Content: ${course.title}`} description={isSuperAdmin ? "Add lessons and organize your course topics." : "Preview of the course structure."} />
       
       <Card>
         <CardHeader>
             <CardTitle>Course Structure</CardTitle>
-            <CardDescription>{isSuperAdmin ? "Add, remove, and manage lessons for this course." : "Below are the lessons and resources included in this course."}</CardDescription>
+            <CardDescription>{isSuperAdmin ? "Add, remove, and manage lessons for this course." : "Below are the lessons and topics included in this course."}</CardDescription>
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full space-y-2">
@@ -566,7 +569,7 @@ export default function ManageCourseContentPage() {
                                         <GripVertical className="h-5 w-5 text-muted-foreground mr-2" />
                                         <span className="font-semibold">{lesson.title}</span>
                                     </div>
-                                    <span className="text-sm text-muted-foreground">{lessonContents.length} resource(s)</span>
+                                    <span className="text-sm text-muted-foreground">{lessonContents.length} topic(s)</span>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-4 pt-2 border-t">
@@ -589,16 +592,16 @@ export default function ManageCourseContentPage() {
                                                 </div>
                                             )}
                                        </div>
-                                   )) : <p className="text-sm text-muted-foreground text-center py-2">No resources in this lesson yet.</p>}
+                                   )) : <p className="text-sm text-muted-foreground text-center py-2">No topics in this lesson yet.</p>}
                                </div>
                                
                                {isResourceFormOpen === lesson.id ? (
                                    <Card className="mt-4 bg-muted/50">
-                                       <CardHeader><CardTitle className="text-base">{editingResource ? `Edit Resource in "${lesson.title}"` : `Add New Resource to "${lesson.title}"`}</CardTitle></CardHeader>
+                                       <CardHeader><CardTitle className="text-base">{editingResource ? `Edit Topic in "${lesson.title}"` : `Add New Topic to "${lesson.title}"`}</CardTitle></CardHeader>
                                        <CardContent>
                                            <form ref={resourceFormRef} onSubmit={(e) => handleResourceSubmit(e, lesson)} className="space-y-4">
                                                 <div>
-                                                   <Label>Resource Type</Label>
+                                                   <Label>Topic Type</Label>
                                                    <RadioGroup value={resourceType} onValueChange={(val) => setResourceType(val as ResourceTabKey)} className="flex flex-wrap gap-x-4 gap-y-2 pt-1">
                                                        <div className="flex items-center space-x-2"><RadioGroupItem value="note" id={`type-note-${lesson.id}`} /><Label htmlFor={`type-note-${lesson.id}`}>Note</Label></div>
                                                        <div className="flex items-center space-x-2"><RadioGroupItem value="web_page" id={`type-webpage-${lesson.id}`} /><Label htmlFor={`type-webpage-${lesson.id}`}>Web Page</Label></div>
@@ -614,7 +617,7 @@ export default function ManageCourseContentPage() {
                                                 </div>
                                                 <div className="grid md:grid-cols-2 gap-4">
                                                   <div>
-                                                      <Label htmlFor={`res-title-${lesson.id}`}>Resource Title</Label>
+                                                      <Label htmlFor={`res-title-${lesson.id}`}>Topic Title</Label>
                                                       <Input id={`res-title-${lesson.id}`} value={resourceTitle} onChange={e => setResourceTitle(e.target.value)} placeholder="e.g., Chapter 1 PDF" required disabled={isSubmitting} />
                                                   </div>
                                                   {['quiz', 'drag_and_drop'].includes(resourceType) && (
@@ -864,7 +867,7 @@ export default function ManageCourseContentPage() {
 
                                                 <div className="flex gap-2 pt-4">
                                                     <Button type="submit" disabled={isSubmitting}>
-                                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />} {editingResource ? 'Update Resource' : 'Add Resource'}
+                                                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <PlusCircle className="mr-2 h-4 w-4" />} {editingResource ? 'Update Topic' : 'Add Topic'}
                                                     </Button>
                                                     <Button type="button" variant="outline" onClick={() => setIsResourceFormOpen(null)} disabled={isSubmitting}>Cancel</Button>
                                                 </div>
@@ -874,7 +877,7 @@ export default function ManageCourseContentPage() {
                                ) : (
                                   isSuperAdmin && (
                                     <Button size="sm" variant="outline" className="mt-4" onClick={() => handleOpenResourceForm(lesson.id)} disabled={isSubmitting}>
-                                        <PlusCircle className="mr-2 h-4 w-4"/> Add Resource to this Lesson
+                                        <PlusCircle className="mr-2 h-4 w-4"/> Add Topic to this Lesson
                                     </Button>
                                   )
                                )}
