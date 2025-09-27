@@ -12,6 +12,7 @@ import { Loader2, PlusCircle, Trash2, Move, ArrowUp, ArrowDown, Save } from 'luc
 import { Rnd } from 'react-rnd';
 import Image from 'next/image';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Separator } from '@/components/ui/separator';
 
 interface CertificateEditorProps {
   templateType: string;
