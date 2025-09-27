@@ -26,6 +26,7 @@ import { PlusCircle, Edit2, Trash2, Save, Library, Settings, Loader2, MoreHorizo
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import Image from 'next/image';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -57,6 +58,7 @@ export default function SuperAdminManageCoursesPage() {
   const [pricePerUser, setPricePerUser] = useState<number | ''>('');
   const [discountPercentage, setDiscountPercentage] = useState<number | ''>('');
   const [maxUsersAllowed, setMaxUsersAllowed] = useState<number | ''>('');
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const fetchCourses = useCallback(async () => {
     setIsLoading(true);
@@ -89,6 +91,7 @@ export default function SuperAdminManageCoursesPage() {
     setTitle('');
     setDescription('');
     setFeatureImageFile(null);
+    setImagePreview(null);
     setSubscriptionPlan('free');
     setBasePrice('');
     setPricePerUser('');
@@ -103,6 +106,7 @@ export default function SuperAdminManageCoursesPage() {
       setTitle(course.title);
       setDescription(course.description || '');
       setFeatureImageFile(null);
+      setImagePreview(course.feature_image_url || null);
       setSubscriptionPlan(course.subscription_plan || 'free');
       setBasePrice(course.base_price ?? '');
       setPricePerUser(course.price_per_user ?? '');
@@ -121,6 +125,15 @@ export default function SuperAdminManageCoursesPage() {
       return;
     }
     setFeatureImageFile(file);
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+    }
   };
 
   const handleCourseSubmit = async (e: FormEvent) => {
@@ -376,6 +389,14 @@ export default function SuperAdminManageCoursesPage() {
                 <Label htmlFor="feature_image_url">Feature Image (Optional, &lt;2MB)</Label>
                 <Input id="feature_image_url" type="file" onChange={handleFileChange} accept="image/png, image/jpeg, image/webp" disabled={isSubmitting}/>
               </div>
+              {imagePreview && (
+                <div className="mt-2">
+                    <Label>Image Preview</Label>
+                    <div className="relative mt-1 aspect-video w-full overflow-hidden rounded-md border">
+                        <Image src={imagePreview} alt="Feature Image Preview" layout="fill" className="object-cover"/>
+                    </div>
+                </div>
+              )}
                <div>
                 <Label>Subscription Plan</Label>
                 <Select value={subscriptionPlan} onValueChange={(val) => setSubscriptionPlan(val as SubscriptionPlan)} required disabled={isSubmitting}>
