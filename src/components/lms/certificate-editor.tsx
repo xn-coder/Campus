@@ -25,6 +25,21 @@ interface CertificateEditorProps {
   placeholderVariables: { value: string; label: string }[];
 }
 
+const defaultTemplate: Partial<CertificateTemplate> = {
+  elements: [
+    { id: 'el_title', content: 'Certificate of Completion', x: 226, y: 130, width: 500, height: 50, fontSize: 36, fontFamily: 'serif', color: '#000000', align: 'center' },
+    { id: 'el_presented', content: 'This certificate is proudly presented to', x: 326, y: 220, width: 300, height: 30, fontSize: 18, fontFamily: 'sans-serif', color: '#555555', align: 'center' },
+    { id: 'el_student_name', content: '{{student_name}}', x: 176, y: 270, width: 600, height: 60, fontSize: 48, fontFamily: 'cursive', color: '#000000', align: 'center' },
+    { id: 'el_completion_text', content: 'for successfully completing the course', x: 276, y: 360, width: 400, height: 30, fontSize: 18, fontFamily: 'sans-serif', color: '#555555', align: 'center' },
+    { id: 'el_course_name', content: '{{course_name}}', x: 226, y: 400, width: 500, height: 40, fontSize: 28, fontFamily: 'serif', color: '#333333', align: 'center' },
+    { id: 'el_date_label', content: 'Date', x: 150, y: 500, width: 150, height: 20, fontSize: 14, fontFamily: 'sans-serif', color: '#555555', align: 'center' },
+    { id: 'el_date_value', content: '{{completion_date}}', x: 150, y: 520, width: 150, height: 20, fontSize: 16, fontFamily: 'sans-serif', color: '#000000', align: 'center', },
+    { id: 'el_signature_label', content: 'Signature', x: 650, y: 500, width: 150, height: 20, fontSize: 14, fontFamily: 'sans-serif', color: '#555555', align: 'center' },
+  ],
+  background_image_url: null,
+};
+
+
 const CertificateEditor: React.FC<CertificateEditorProps> = ({
   templateType,
   getTemplateAction,
@@ -44,6 +59,10 @@ const CertificateEditor: React.FC<CertificateEditorProps> = ({
     if (result.ok && result.template) {
       setTemplate(result.template);
       setBackgroundImagePreview(result.template.background_image_url || null);
+    } else if (result.ok && !result.template) {
+      // If there's no template in the DB, use the default one.
+      setTemplate(defaultTemplate);
+      setBackgroundImagePreview(null);
     } else if (!result.ok) {
       toast({ title: "Error", description: result.message, variant: "destructive" });
     }
