@@ -476,7 +476,7 @@ export interface CourseWithEnrollmentStatus extends Course {
 }
 
 
-// A resource that is a child of a lesson. This is a client-side type
+// A topic that is a child of a lesson. This is a client-side type
 // used to structure content in a JSON blob within a 'lesson' type CourseResource.
 export interface LessonContentResource {
     id: string;
@@ -530,7 +530,7 @@ export interface QuizQuestion {
 }
 
 // A resource stored in the DB.
-// It can be a "lesson" which acts as a container, or a regular resource if not using lessons.
+// It can be a "lesson" which acts as a container, or a regular topic if not using lessons.
 // The application interprets a resource with type 'note' as a lesson container.
 export interface CourseResource {
   id: string;

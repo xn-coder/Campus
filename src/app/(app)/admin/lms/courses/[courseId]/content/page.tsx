@@ -73,7 +73,7 @@ export default function AdminPreviewCourseContentPage() {
       <Card>
         <CardHeader>
             <CardTitle>Course Structure</CardTitle>
-            <CardDescription>Review the lessons and resources included in this course.</CardDescription>
+            <CardDescription>Review the lessons and topics included in this course.</CardDescription>
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full space-y-2">
@@ -84,7 +84,7 @@ export default function AdminPreviewCourseContentPage() {
                             <AccordionTrigger className="px-4 hover:no-underline">
                                 <div className="flex items-center justify-between w-full">
                                     <span className="font-semibold">{lesson.title}</span>
-                                    <span className="text-sm text-muted-foreground">{lessonContents.length} resource(s)</span>
+                                    <span className="text-sm text-muted-foreground">{lessonContents.length} topic(s)</span>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-4 pt-2 border-t">

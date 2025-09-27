@@ -369,7 +369,7 @@ export async function getCourseContentForAdminAction(courseId: string): Promise<
 }
 
 
-// Adds a "Lesson" to a course. A lesson is a container for other resources.
+// Adds a "Lesson" to a course. A lesson is a container for other topics.
 export async function addLessonToCourseAction(input: { course_id: string; title: string }): Promise<{ ok: boolean; message: string, resource?: CourseResource }> {
     const supabase = createSupabaseServerClient();
     const { error, data } = await supabase
@@ -378,7 +378,7 @@ export async function addLessonToCourseAction(input: { course_id: string; title:
             course_id: input.course_id,
             title: input.title,
             type: 'note', // Lessons are stored as type 'note' to act as containers
-            url_or_content: '[]' // Initialize with an empty JSON array for resources
+            url_or_content: '[]' // Initialize with an empty JSON array for topics
         })
         .select()
         .single();
@@ -435,9 +435,9 @@ export async function updateResourceInLessonAction(
         if (updateError) throw updateError;
         
         revalidatePath('/admin/lms/courses');
-        return { ok: true, message: "Resource updated successfully." };
+        return { ok: true, message: "Topic updated successfully." };
     } catch(e: any) {
-        return { ok: false, message: `Failed to update resource: ${e.message}`};
+        return { ok: false, message: `Failed to update topic: ${e.message}`};
     }
 }
 
@@ -455,7 +455,7 @@ export async function deleteCourseResourceAction(
                 .eq('id', lessonResourceId);
             if (updateError) throw updateError;
             revalidatePath('/admin/lms/courses');
-            return {ok: true, message: "Resource removed from lesson."}
+            return {ok: true, message: "Topic removed from lesson."}
         } else {
              // Deleting the whole lesson
              const { error } = await supabase.from('lms_course_resources').delete().eq('id', lessonResourceId);
@@ -464,7 +464,7 @@ export async function deleteCourseResourceAction(
              return {ok: true, message: "Lesson deleted."};
         }
     } catch(e: any) {
-        return { ok: false, message: `Failed to delete resource: ${e.message}`};
+        return { ok: false, message: `Failed to delete topic: ${e.message}`};
     }
 }
 
@@ -533,7 +533,7 @@ export async function addResourceToLessonAction(formData: FormData): Promise<{ o
 
 
   if (!lessonId || !courseId || !resourceTitle || !resourceType) {
-    return { ok: false, message: "Missing required fields for adding resource." };
+    return { ok: false, message: "Missing required fields for adding topic." };
   }
 
   // Basic validation: ensure urlOrContent is present for types that need it.
@@ -541,7 +541,7 @@ export async function addResourceToLessonAction(formData: FormData): Promise<{ o
       if ((resourceType === 'note' || resourceType === 'drag_and_drop' || resourceType === 'web_page') && (urlOrContent === '' || urlOrContent === '[]' || urlOrContent === '{}')) {
           // allow empty note/dnd/webpage
       } else {
-        return { ok: false, message: "Resource content (URL or data) is required." };
+        return { ok: false, message: "Topic content (URL or data) is required." };
       }
   }
 
@@ -553,7 +553,7 @@ export async function addResourceToLessonAction(formData: FormData): Promise<{ o
       .single();
     
     if (fetchError || !lesson) {
-        throw new Error("Could not find the parent lesson to add the resource to.");
+        throw new Error("Could not find the parent lesson to add the topic to.");
     }
     
     let currentContent: LessonContentResource[] = [];
@@ -586,7 +586,7 @@ export async function addResourceToLessonAction(formData: FormData): Promise<{ o
     }
 
     revalidatePath(`/admin/lms/courses/${courseId}/content`);
-    return { ok: true, message: "Resource added successfully." };
+    return { ok: true, message: "Topic added successfully." };
     
   } catch (e: any) {
     console.error("Error in addResourceToLessonAction:", e);
