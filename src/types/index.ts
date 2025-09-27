@@ -719,11 +719,11 @@ export interface CertificateElement {
 
 export interface CertificateTemplate {
   id: string;
-  template_type: string; // e.g., 'student_course_completion'
+  template_type: string;
   background_image_url?: string | null;
   elements: CertificateElement[];
-  orientation?: 'portrait' | 'landscape';
-  school_id?: string | null; // For school-specific templates
+  orientation: 'portrait' | 'landscape'; // Made non-optional
+  school_id?: string | null;
   created_at: string;
   updated_at: string;
 }

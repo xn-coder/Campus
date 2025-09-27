@@ -57,6 +57,7 @@ export async function saveCertificateTemplateAction(
       ...templateData,
       template_type: templateType,
       background_image_url,
+      orientation: templateData.orientation || 'landscape', // Ensure orientation has a default
       updated_at: new Date().toISOString(),
     };
     
