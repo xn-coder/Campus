@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import PageHeader from '@/components/shared/page-header';
@@ -389,26 +388,31 @@ export default function SuperAdminManageCoursesPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                 <div>
-                    <Label htmlFor="basePrice" className="font-mono">Initial Course Price (₹)</Label>
-                    <Input id="basePrice" type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 2999" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
-                  </div>
-                 <div>
-                    <Label htmlFor="pricePerUser" className="font-mono">Price per User (₹)</Label>
-                    <Input id="pricePerUser" type="number" value={pricePerUser} onChange={(e) => setPricePerUser(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 99" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
-                  </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="maxUsersAllowed">Initial Seats Included</Label>
-                    <Input id="maxUsersAllowed" type="number" value={maxUsersAllowed} onChange={(e) => setMaxUsersAllowed(e.target.value === '' ? '' : parseInt(e.target.value, 10))} placeholder="e.g., 50" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
-                  </div>
-                   <div>
-                    <Label htmlFor="discount_percentage">Discount (%)</Label>
-                    <Input id="discount_percentage" type="number" value={discountPercentage} onChange={(e) => setDiscountPercentage(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 10" step="1" min="0" max="100" disabled={isSubmitting || subscriptionPlan === 'free'}/>
-                  </div>
-              </div>
+              
+              {subscriptionPlan !== 'free' && (
+                <div className="p-4 border rounded-md space-y-4 bg-muted/50">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="basePrice" className="font-mono">Initial Course Price (₹)</Label>
+                            <Input id="basePrice" type="number" value={basePrice} onChange={(e) => setBasePrice(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 2999" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
+                        </div>
+                        <div>
+                            <Label htmlFor="pricePerUser" className="font-mono">Price per User (₹)</Label>
+                            <Input id="pricePerUser" type="number" value={pricePerUser} onChange={(e) => setPricePerUser(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 99" step="0.01" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="maxUsersAllowed">Initial Seats Included</Label>
+                            <Input id="maxUsersAllowed" type="number" value={maxUsersAllowed} onChange={(e) => setMaxUsersAllowed(e.target.value === '' ? '' : parseInt(e.target.value, 10))} placeholder="e.g., 50" min="0" required={subscriptionPlan !== 'free'} disabled={isSubmitting || subscriptionPlan === 'free'}/>
+                        </div>
+                        <div>
+                            <Label htmlFor="discount_percentage">Discount (%)</Label>
+                            <Input id="discount_percentage" type="number" value={discountPercentage} onChange={(e) => setDiscountPercentage(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="e.g., 10" step="1" min="0" max="100" disabled={isSubmitting || subscriptionPlan === 'free'}/>
+                        </div>
+                    </div>
+                </div>
+              )}
             </div>
             <DialogFooter className="mt-4">
               <DialogClose asChild><Button variant="outline" disabled={isSubmitting}>Cancel</Button></DialogClose>
@@ -423,5 +427,3 @@ export default function SuperAdminManageCoursesPage() {
     </div>
   );
 }
-
-    
